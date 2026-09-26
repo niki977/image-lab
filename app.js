@@ -294,6 +294,7 @@
     await useImage(img);
     P = IL.defaults(); baseline = IL.defaults(); preset = "nat";
     $("#loadRow").hidden = false;
+    $("#preview").classList.add("droppable");
     syncSliders(); show("editor"); updateTexts(); render();
   }
   async function loadOwnPhoto(file) {
@@ -306,6 +307,33 @@
       syncSliders(); updateTexts(); render();
     } catch (e) { toast(t("toast.loadError")); }
     finally { URL.revokeObjectURL(url); }
+  }
+
+  /* ---------- Trascina e rilascia una foto (solo versione web) ---------- */
+  function bindDrop() {
+    const drop = $("#drop");
+    let depth = 0;
+    const hasFile = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+    const hide = () => { depth = 0; drop.hidden = true; };
+    window.addEventListener("dragenter", (e) => {
+      if (mode !== "demo" || !hasFile(e)) return;
+      e.preventDefault(); depth++; drop.hidden = false;
+    });
+    window.addEventListener("dragover", (e) => {
+      if (mode !== "demo" || !hasFile(e)) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+    });
+    window.addEventListener("dragleave", (e) => {
+      if (mode !== "demo" || !hasFile(e)) return;
+      depth = Math.max(0, depth - 1); if (!depth) drop.hidden = true;
+    });
+    window.addEventListener("drop", (e) => {
+      if (mode !== "demo") return;
+      e.preventDefault(); hide();
+      const f = Array.from((e.dataTransfer && e.dataTransfer.files) || []).find((x) => /^image\//.test(x.type));
+      if (f) loadOwnPhoto(f); else toast(t("toast.loadError"));
+    });
+    window.addEventListener("blur", hide);
   }
 
   /* ---------- PowerPoint: lettura della selezione ---------- */
@@ -558,6 +586,7 @@
     $("#restoreBtn").addEventListener("click", restore);
     $("#applyBtn").addEventListener("click", apply);
     $("#loadBtn").addEventListener("click", () => $("#fileIn").click());
+    bindDrop();
     $("#fileIn").addEventListener("change", (e) => { loadOwnPhoto(e.target.files[0]); e.target.value = ""; });
     let rz = 0;
     window.addEventListener("resize", () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { drawHist(); placeLevelLabels(); }); });

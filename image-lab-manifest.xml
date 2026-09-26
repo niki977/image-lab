@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Ultraspeaker Image Lab – manifest per PowerPoint.
+     Tutti gli indirizzi puntano a https://niki977.github.io/image-lab/ : se pubblichi in un'altra cartella, sostituisci quel testo ovunque. -->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+           xsi:type="TaskPaneApp">
+  <Id>4373274f-b974-43d3-aa72-b60dd865039a</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>The Ultraspeaker</ProviderName>
+  <DefaultLocale>it-IT</DefaultLocale>
+  <DisplayName DefaultValue="The Ultraspeaker Image Lab">
+    <Override Locale="en-US" Value="The Ultraspeaker Image Lab"/>
+  </DisplayName>
+  <Description DefaultValue="Regola le foto delle slide con istogramma, livelli, esposizione, contrasto, colore e nitidezza. L’originale resta nella presentazione.">
+    <Override Locale="en-US" Value="Adjust slide photos with a histogram, levels, exposure, contrast, colour and sharpness. The original stays in the presentation."/>
+    <Override Locale="es-ES" Value="Ajusta las fotos de las diapositivas con histograma, niveles, exposición, contraste, color y nitidez. El original se conserva en la presentación."/>
+    <Override Locale="fr-FR" Value="Réglez les photos des diapositives avec histogramme, niveaux, exposition, contraste, couleur et netteté. L’original reste dans la présentation."/>
+    <Override Locale="de-DE" Value="Bearbeiten Sie Fotos auf Folien mit Histogramm, Tonwerten, Belichtung, Kontrast, Farbe und Schärfe. Das Original bleibt in der Präsentation."/>
+  </Description>
+  <IconUrl DefaultValue="https://niki977.github.io/image-lab/assets/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://niki977.github.io/image-lab/assets/icon-128.png"/>
+  <SupportUrl DefaultValue="https://niki977.github.io/image-lab/"/>
+  <AppDomains>
+    <AppDomain>https://niki977.github.io</AppDomain>
+  </AppDomains>
+  <Hosts>
+    <Host Name="Presentation"/>
+  </Hosts>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://niki977.github.io/image-lab/index.html"/>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Presentation">
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="Home.Url"/>
+          </GetStarted>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="Ultraspeaker.ImageLab.Group">
+                <Label resid="Group.Label"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="Ultraspeaker.ImageLab.Open">
+                  <Label resid="Button.Label"/>
+                  <Supertip>
+                    <Title resid="Button.Label"/>
+                    <Description resid="Button.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>UltraspeakerImageLab</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://niki977.github.io/image-lab/assets/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://niki977.github.io/image-lab/assets/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://niki977.github.io/image-lab/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://niki977.github.io/image-lab/index.html"/>
+        <bt:Url id="Home.Url" DefaultValue="https://niki977.github.io/image-lab/"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Group.Label" DefaultValue="The Ultraspeaker">
+          <bt:Override Locale="en-US" Value="The Ultraspeaker"/>
+        </bt:String>
+        <bt:String id="Button.Label" DefaultValue="Image Lab">
+          <bt:Override Locale="en-US" Value="Image Lab"/>
+        </bt:String>
+        <bt:String id="GetStarted.Title" DefaultValue="Image Lab è pronto">
+          <bt:Override Locale="en-US" Value="Image Lab is ready"/>
+          <bt:Override Locale="es-ES" Value="Image Lab está listo"/>
+          <bt:Override Locale="fr-FR" Value="Image Lab est prêt"/>
+          <bt:Override Locale="de-DE" Value="Image Lab ist bereit"/>
+        </bt:String>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="Button.Tooltip" DefaultValue="Regola la foto selezionata con istogramma e livelli.">
+          <bt:Override Locale="en-US" Value="Adjust the selected photo with a histogram and levels."/>
+          <bt:Override Locale="es-ES" Value="Ajusta la foto seleccionada con histograma y niveles."/>
+          <bt:Override Locale="fr-FR" Value="Réglez la photo sélectionnée avec l’histogramme et les niveaux."/>
+          <bt:Override Locale="de-DE" Value="Bearbeiten Sie das ausgewählte Foto mit Histogramm und Tonwerten."/>
+        </bt:String>
+        <bt:String id="GetStarted.Description" DefaultValue="Seleziona una foto e apri Image Lab dalla scheda Home.">
+          <bt:Override Locale="en-US" Value="Select a photo and open Image Lab from the Home tab."/>
+          <bt:Override Locale="es-ES" Value="Selecciona una foto y abre Image Lab desde la pestaña Inicio."/>
+          <bt:Override Locale="fr-FR" Value="Sélectionnez une photo et ouvrez Image Lab depuis l’onglet Accueil."/>
+          <bt:Override Locale="de-DE" Value="Wählen Sie ein Foto aus und öffnen Sie Image Lab über die Registerkarte Start."/>
+        </bt:String>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

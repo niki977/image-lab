@@ -23,18 +23,18 @@ Su versioni precedenti il pannello mostra un messaggio che chiede di aggiornare.
 ## Pubblicazione su GitHub Pages
 
 1. Crea su GitHub un repository pubblico chiamato **image-lab** (account `niki977`).
-2. Carica tutti i file di questa cartella (anche la cartella `assets`).
+2. Carica tutti i file di questa cartella (anche le cartelle `assets` e `fonts`).
 3. In *Settings → Pages* scegli *Deploy from a branch*, ramo `main`, cartella `/ (root)`.
 4. Dopo un minuto il pannello è raggiungibile su `https://niki977.github.io/image-lab/`
    (aprendolo nel browser parte in modalità prova con una foto di esempio).
 
-Se usi un altro nome di repository, sostituisci `https://niki977.github.io/image-lab/` in `manifest.xml`.
+Se usi un altro nome di repository, sostituisci `https://niki977.github.io/image-lab/` in `image-lab-manifest.xml`.
 
 ## Installazione per le prove (sideload)
 
 - **PowerPoint sul web**: Home → Componenti aggiuntivi → Altri componenti aggiuntivi → I miei componenti
-  aggiuntivi → Carica il mio componente aggiuntivo → scegli `manifest.xml`.
-- **Mac**: copia `manifest.xml` nella cartella
+  aggiuntivi → Carica il mio componente aggiuntivo → scegli `image-lab-manifest.xml`.
+- **Mac**: copia `image-lab-manifest.xml` nella cartella
   `~/Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef` (creala se non esiste), poi riapri PowerPoint:
   lo trovi in Home → Componenti aggiuntivi → I miei componenti aggiuntivi.
 - **Windows**: Home → Componenti aggiuntivi → Altri componenti aggiuntivi → I miei componenti aggiuntivi →
@@ -51,8 +51,10 @@ Il pulsante **Image Lab** compare nella scheda Home, nel gruppo «The Ultraspeak
 | `app.js` | Collegamento con PowerPoint, anteprima, istogramma, applicazione |
 | `imaging.js` | Elaborazione dei pixel (livelli, tono, colore, nitidezza, rumore) |
 | `i18n.js` | Testi nelle 5 lingue |
-| `manifest.xml` | Manifest dell’add-in per PowerPoint |
-| `assets/` | Logo e icone (16–300 px) |
+| `image-lab-manifest.xml` | Manifest dell’add-in per PowerPoint |
+| `assets/` | Loghi SVG (Image Lab, The Ultraspeaker, Arena, cursori) e icone PNG (16–300 px) |
+| `fonts/` | Quicksand in woff2 (400, 500, 600, 700) e licenza OFL |
+| `GUIDA-INSTALLAZIONE.html` | Guida passo passo |
 
 ## Note per il Marketplace Microsoft
 

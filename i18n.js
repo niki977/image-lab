@@ -3,6 +3,8 @@ window.IL_I18N = {
   langs: [["it", "Italiano"], ["en", "English"], ["es", "Español"], ["fr", "Français"], ["de", "Deutsch"]],
 
   it: {
+    "dropHere": "Trascina qui la foto",
+    "orDrop": "oppure trascinala sull’anteprima",
     "noteArtifact": "Demo: prova i cursori sulla foto di esempio o su una tua foto. In PowerPoint “Applica alla slide” sostituisce la foto nella slide e conserva l’originale.",
     "loadPhoto": "Prova con una tua foto",
     "lang": "Lingua",
@@ -53,6 +55,8 @@ window.IL_I18N = {
   },
 
   en: {
+    "dropHere": "Drop the photo here",
+    "orDrop": "or drag it onto the preview",
     "noteArtifact": "Demo: try the sliders on the sample photo or on one of yours. In PowerPoint “Apply to slide” replaces the photo on the slide and keeps the original.",
     "loadPhoto": "Try your own photo",
     "lang": "Language",
@@ -103,6 +107,8 @@ window.IL_I18N = {
   },
 
   es: {
+    "dropHere": "Suelta aquí la foto",
+    "orDrop": "o arrástrala a la vista previa",
     "noteArtifact": "Demo: prueba los controles con la foto de ejemplo o con una tuya. En PowerPoint “Aplicar a la diapositiva” sustituye la foto y conserva el original.",
     "loadPhoto": "Prueba con una foto tuya",
     "lang": "Idioma",
@@ -153,6 +159,8 @@ window.IL_I18N = {
   },
 
   fr: {
+    "dropHere": "Déposez la photo ici",
+    "orDrop": "ou faites-la glisser sur l’aperçu",
     "noteArtifact": "Démo : essayez les réglages sur la photo d’exemple ou sur l’une des vôtres. Dans PowerPoint, « Appliquer à la diapositive » remplace la photo et conserve l’original.",
     "loadPhoto": "Essayer avec votre photo",
     "lang": "Langue",
@@ -203,6 +211,8 @@ window.IL_I18N = {
   },
 
   de: {
+    "dropHere": "Foto hier ablegen",
+    "orDrop": "oder auf die Vorschau ziehen",
     "noteArtifact": "Demo: Testen Sie die Regler am Beispielfoto oder an einem eigenen Foto. In PowerPoint ersetzt „Auf Folie anwenden“ das Foto auf der Folie und behält das Original.",
     "loadPhoto": "Eigenes Foto testen",
     "lang": "Sprache",
