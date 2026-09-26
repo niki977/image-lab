@@ -7,7 +7,7 @@
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
   <Id>4373274f-b974-43d3-aa72-b60dd865039a</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.0.1.0</Version>
   <ProviderName>The Ultraspeaker</ProviderName>
   <DefaultLocale>it-IT</DefaultLocale>
   <DisplayName DefaultValue="The Ultraspeaker Image Lab">
@@ -19,8 +19,8 @@
     <Override Locale="fr-FR" Value="Réglez les photos des diapositives avec histogramme, niveaux, exposition, contraste, couleur et netteté. L’original reste dans la présentation."/>
     <Override Locale="de-DE" Value="Bearbeiten Sie Fotos auf Folien mit Histogramm, Tonwerten, Belichtung, Kontrast, Farbe und Schärfe. Das Original bleibt in der Präsentation."/>
   </Description>
-  <IconUrl DefaultValue="https://niki977.github.io/image-lab/assets/icon-64.png"/>
-  <HighResolutionIconUrl DefaultValue="https://niki977.github.io/image-lab/assets/icon-128.png"/>
+  <IconUrl DefaultValue="https://niki977.github.io/image-lab/assets/image-lab-icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://niki977.github.io/image-lab/assets/image-lab-icon-128.png"/>
   <SupportUrl DefaultValue="https://niki977.github.io/image-lab/"/>
   <AppDomains>
     <AppDomain>https://niki977.github.io</AppDomain>
@@ -75,9 +75,9 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16" DefaultValue="https://niki977.github.io/image-lab/assets/icon-16.png"/>
-        <bt:Image id="Icon.32" DefaultValue="https://niki977.github.io/image-lab/assets/icon-32.png"/>
-        <bt:Image id="Icon.80" DefaultValue="https://niki977.github.io/image-lab/assets/icon-80.png"/>
+        <bt:Image id="Icon.16" DefaultValue="https://niki977.github.io/image-lab/assets/image-lab-icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://niki977.github.io/image-lab/assets/image-lab-icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://niki977.github.io/image-lab/assets/image-lab-icon-80.png"/>
       </bt:Images>
       <bt:Urls>
         <bt:Url id="Taskpane.Url" DefaultValue="https://niki977.github.io/image-lab/index.html"/>

@@ -59,5 +59,5 @@ Il pulsante **Image Lab** compare nella scheda Home, nel gruppo «The Ultraspeak
 ## Note per il Marketplace Microsoft
 
 Per la pubblicazione su AppSource servono anche: pagina di privacy e condizioni d’uso (URL),
-icona 300×300 (`assets/icon-300.png`), screenshot del pannello e una descrizione estesa.
+icona 300×300 (`assets/image-lab-icon-300.png`), screenshot del pannello e una descrizione estesa.
 L’add-in non invia le immagini a nessun server: tutta l’elaborazione avviene nel pannello.
