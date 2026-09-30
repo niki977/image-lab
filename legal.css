@@ -1,0 +1,28 @@
+/* The Ultraspeaker Image Lab – stile comune di guida, supporto, privacy e condizioni d'uso */
+@font-face{font-family:"Quicksand";font-weight:500;font-display:swap;src:url(fonts/quicksand-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:"Quicksand";font-weight:700;font-display:swap;src:url(fonts/quicksand-latin-700-normal.woff2) format("woff2")}
+:root{--bg:#f3f3f3;--surface:#fff;--ink:#000;--ink-2:#444;--line:#ddd;--soft:#ececec;--code:#efefef}
+@media (prefers-color-scheme: dark){:root{--bg:#000;--surface:#111;--ink:#fff;--ink-2:#c8c8c8;--line:#2a2a2a;--soft:#222;--code:#1c1c1c;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.65 "Quicksand","Avenir Next","Segoe UI",Arial,sans-serif}
+header{background:#000;color:#fff;padding:28px 16px 22px}
+header .in,main,nav{max-width:760px;margin:0 auto}
+header img{display:block;width:min(300px,75%);height:auto}
+nav{display:flex;flex-wrap:wrap;gap:6px 18px;padding:14px 16px 0;font-size:13px;font-weight:700}
+nav a{color:var(--ink-2);text-decoration:none}nav a[aria-current="page"]{color:var(--ink);text-decoration:underline;text-underline-offset:4px}
+main{padding:24px 16px 64px}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance}
+.lead{color:var(--ink-2);margin:0 0 24px}
+section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
+h2{font-size:17px;margin:0 0 10px}
+h3{font-size:15px;margin:16px 0 4px}
+p{margin:0 0 10px}
+ol,ul{padding-left:20px;margin:0 0 10px}li{margin:5px 0}
+b{font-weight:700}
+a{color:inherit}
+code{background:var(--code);padding:2px 6px;border-radius:5px;font-size:13px;word-break:break-all;font-family:ui-monospace,Menlo,monospace}
+.note{background:var(--soft);border-radius:8px;padding:10px 14px;font-size:14px;margin-top:12px}
+.muted{color:var(--ink-2);font-size:14px}
+.langs{font-size:13px;font-weight:700;margin:0 0 18px}
+.tag{text-align:center;font-size:10px;letter-spacing:.42em;text-transform:uppercase;color:var(--ink-2);margin-top:28px}
+.tag img{display:block;width:180px;height:auto;margin:0 auto 14px}

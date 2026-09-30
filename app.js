@@ -15,6 +15,10 @@
     clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2600);
   }
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  // Telefono o tablet: schermo touch con menu di condivisione del sistema (Foto, WhatsApp, Messaggi…)
+  const isMobile = () => {
+    try { return window.matchMedia("(pointer: coarse)").matches && typeof navigator.share === "function"; } catch (e) { return false; }
+  };
 
   /* ---------- Lingua ---------- */
   const I18N = window.IL_I18N;
@@ -122,10 +126,10 @@
   }
   function updateTexts() {
     $$("#presets .chip").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === preset)));
-    $("#note").textContent = mode === "demo" ? (window.IL_ARTIFACT ? t("noteArtifact") : t("noteDemo")) : t("note");
+    $("#note").textContent = mode === "demo" ? (window.IL_ARTIFACT ? t("noteArtifact") : isMobile() ? t("noteMobile") : t("noteDemo")) : t("note");
     $("#applyBtn").hidden = !!(mode === "demo" && window.IL_ARTIFACT);
     const apply = $("#applyBtn");
-    apply.textContent = busy ? t("applying") : mode === "demo" ? t("applyDemo") : t("apply");
+    apply.textContent = busy ? t("applying") : mode === "demo" ? (shareFile ? t("shareReady") : isMobile() ? t("shareMobile") : t("applyDemo")) : t("apply");
     const dirty = !sameParams(P, baseline);
     apply.disabled = busy || (mode === "office" && !dirty);
     const rb = $("#restoreBtn");
@@ -161,6 +165,7 @@
   let raf = 0;
   function changed() {
     restoreArmed = false;
+    shareFile = null;
     updateTexts();
     if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
   }
@@ -249,6 +254,8 @@
   }
   function bindLevels() {
     const b = $("#lvB"), w = $("#lvW"), m = $("#lvM");
+    [b, w, m].forEach((el) => el.addEventListener("pointerdown", () => { [b, w, m].forEach((x) => (x.style.zIndex = x === el ? 3 : 1)); }, true));
+    [b, w, m].forEach((el) => el.addEventListener("focus", () => { [b, w, m].forEach((x) => (x.style.zIndex = x === el ? 3 : 1)); }));
     b.addEventListener("input", () => { P.b = Math.min(+b.value, P.w - 10); b.value = P.b; m.value = Math.round(P.b + P.p * (P.w - P.b)); preset = "custom"; changed(); });
     w.addEventListener("input", () => { P.w = Math.max(+w.value, P.b + 10); w.value = P.w; m.value = Math.round(P.b + P.p * (P.w - P.b)); preset = "custom"; changed(); });
     m.addEventListener("input", () => {
@@ -268,7 +275,15 @@
     return x.getImageData(0, 0, w, h);
   }
   async function useImage(img) {
-    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (mode === "demo") {
+      // foto grandi del telefono: lato lungo al massimo 2560 px su mobile, 4096 px su computer
+      const cap = isMobile() ? 2560 : 4096;
+      const k = Math.min(1, cap / Math.max(w, h));
+      w = Math.max(1, Math.round(w * k)); h = Math.max(1, Math.round(h * k));
+    }
+    // il riquadro segue la forma della foto fino a 21:9; oltre, la foto resta intera con bande sopra e sotto
+    $("#preview").style.setProperty("--ar", String(Math.min(w / h, 21 / 9)));
     const fd = toCanvas(img, w, h);
     full = { data: fd.data, w, h };
     const s = Math.min(1, PREVIEW_MAX / Math.max(w, h));
@@ -290,8 +305,15 @@
     mode = "demo";
     shape = null;
     show("loading");
-    const img = await loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DEMO_SVG));
-    await useImage(img);
+    try {
+      const img = await loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DEMO_SVG));
+      await useImage(img);
+    } catch (e) {
+      console.error(e);
+      show("empty", "empty.title", "empty.text");
+      return;
+    }
+    if (mode !== "demo") return; // nel frattempo si è collegato PowerPoint
     P = IL.defaults(); baseline = IL.defaults(); preset = "nat";
     $("#loadRow").hidden = false;
     $("#preview").classList.add("droppable");
@@ -360,7 +382,14 @@
         if (sel.items.length === 0) return { none: true };
         if (sel.items.length > 1) return { multi: true };
         const sh = sel.items[0];
-        if (sh.type !== "Image") return { notImage: true };
+        if (sh.type !== "Image") {
+          // segnaposto che contiene una foto
+          let isPic = false;
+          if (sh.type === "Placeholder") {
+            try { sh.placeholderFormat.load("containedType"); await ctx.sync(); isPic = sh.placeholderFormat.containedType === "Image"; } catch (e) { isPic = false; }
+          }
+          if (!isPic) return { notImage: true };
+        }
         const slide = sh.getParentSlide();
         slide.load("id");
         sh.tags.load("items/key,items/value");
@@ -393,12 +422,15 @@
           await ctx.sync();
           if (!o.isNullObject) { src = o; origId = o.id; }
         }
-        src.load("id,width,rotation,visible");
+        src.load("id,width,height,rotation,visible");
         await ctx.sync();
         const rot = src.rotation, vis = src.visible;
         if (rot) src.rotation = 0;           // la foto si legge dritta: la rotazione viene rimessa sulla copia
         if (!vis) src.visible = true;        // l'originale nascosto si rende visibile solo per la lettura
-        const px = Math.max(600, Math.min(3200, Math.round(src.width * 4)));
+        // circa 300 dpi, con il lato lungo al massimo di 3200 px
+        const longSide = Math.max(src.width, src.height) || 1;
+        const scale = Math.min(4, 3200 / longSide);
+        const px = Math.max(200, Math.round(src.width * scale));
         const img = src.getImageAsBase64({ format: "Png", width: px });
         await ctx.sync();
         if (rot) src.rotation = rot;
@@ -428,6 +460,36 @@
   }
 
   /* ---------- Applica ---------- */
+  let shareFile = null; // foto pronta da condividere se il primo tentativo è stato bloccato dal browser
+  function renderFullBlob() {
+    const out = new ImageData(full.w, full.h);
+    IL.process(full.data, full.w, full.h, P, out.data, cacheFull);
+    const c = document.createElement("canvas"); c.width = full.w; c.height = full.h;
+    c.getContext("2d").putImageData(out, 0, 0);
+    const png = IL.histogram(out.data).alpha;
+    const type = png ? "image/png" : "image/jpeg";
+    return new Promise((res, rej) => c.toBlob((b) => (b ? res({ blob: b, ext: png ? "png" : "jpg", type }) : rej(new Error("toBlob"))), type, 0.92));
+  }
+  async function shareOrSave(file) {
+    // Telefono: menu di condivisione del sistema → "Salva immagine" (Foto), WhatsApp, Messaggi, Mail…
+    if (isMobile() && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: "Image Lab" });
+        shareFile = null; toast(t("toast.shared"));
+      } catch (e) {
+        if (e && e.name === "AbortError") { shareFile = null; }            // chiuso dall'utente
+        else { shareFile = file; toast(t("shareReady")); }                 // il browser chiede un nuovo tocco
+      }
+      updateTexts();
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url; a.download = file.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast(t("toast.downloaded"));
+  }
   function renderFull() {
     const out = new ImageData(full.w, full.h);
     IL.process(full.data, full.w, full.h, P, out.data, cacheFull);
@@ -448,11 +510,17 @@
   async function apply() {
     if (busy || !full) return;
     if (mode === "demo") {
-      const url = renderFull();
-      const a = document.createElement("a");
-      a.href = url; a.download = "image-lab." + (url.startsWith("data:image/png") ? "png" : "jpg");
-      document.body.appendChild(a); a.click(); a.remove();
-      toast(t("toast.downloaded"));
+      if (shareFile) { const f = shareFile; shareFile = null; await shareOrSave(f); return; }
+      busy = true; updateTexts();
+      await wait(30);
+      try {
+        const r = await renderFullBlob();
+        const file = new File([r.blob], "image-lab-" + new Date().toISOString().slice(0, 10) + "." + r.ext, { type: r.type });
+        busy = false; updateTexts();
+        await shareOrSave(file);
+      } catch (e) {
+        console.error(e); toast(t("toast.error"));
+      } finally { busy = false; updateTexts(); }
       return;
     }
     busy = true; updateTexts(); setStatus("status.loading", "busy");
@@ -479,6 +547,7 @@
 
       // 3) sistemazione: rotazione, nome, etichette, originale nascosto, ordine di livello
       const newId = await PowerPoint.run(async (ctx) => {
+       try {
         const slide = ctx.presentation.slides.getItem(cur.slideId);
         slide.shapes.load("items/id,items/type");
         await ctx.sync();
@@ -507,6 +576,23 @@
         await ctx.sync();
         try { ctx.presentation.setSelectedShapes([ns.id]); await ctx.sync(); } catch (e) { /* ignora */ }
         return ns.id;
+       } catch (err) {
+        // pulizia: toglie eventuali copie inserite e lascia la slide com'era
+        try {
+          const sl = ctx.presentation.slides.getItem(cur.slideId);
+          sl.shapes.load("items/id");
+          const o = sl.shapes.getItemOrNullObject(origId);
+          o.load("id");
+          await ctx.sync();
+          // la copia nuova si toglie solo se l'originale c'è ancora: così la foto non sparisce mai dalla slide
+          if (!o.isNullObject) {
+            sl.shapes.items.filter((x) => !box.ids.includes(x.id)).forEach((x) => x.delete());
+            if (!cur.edited) o.visible = true;
+            await ctx.sync();
+          }
+        } catch (e2) { /* ignora */ }
+        throw err;
+       }
       });
 
       shape = { id: newId, slideId: cur.slideId, origId, edited: true };
@@ -556,7 +642,11 @@
   function pickAt(ev) {
     if (!picking || !prev) return;
     const cv = $("#pv"), r = cv.getBoundingClientRect();
-    const x = Math.floor(((ev.clientX - r.left) / r.width) * prev.w), y = Math.floor(((ev.clientY - r.top) / r.height) * prev.h);
+    // area effettiva della foto dentro il riquadro (object-fit: contain)
+    const k = Math.min(r.width / prev.w, r.height / prev.h);
+    const dw = prev.w * k, dh = prev.h * k, ox = r.left + (r.width - dw) / 2, oy = r.top + (r.height - dh) / 2;
+    if (ev.clientX < ox || ev.clientX > ox + dw || ev.clientY < oy || ev.clientY > oy + dh) return;
+    const x = Math.floor(((ev.clientX - ox) / dw) * prev.w), y = Math.floor(((ev.clientY - oy) / dh) * prev.h);
     let R = 0, G = 0, B = 0, n = 0;
     for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
       const xx = Math.min(prev.w - 1, Math.max(0, x + dx)), yy = Math.min(prev.h - 1, Math.max(0, y + dy));
@@ -574,7 +664,7 @@
     const sel = $("#lang");
     sel.innerHTML = I18N.langs.map(([k, n]) => `<option value="${k}">${n}</option>`).join("");
     sel.value = LANG;
-    sel.addEventListener("change", () => { LANG = sel.value; store.set("imagelab.lang", LANG); applyStatic(); if (mode === "unsupported") showUnsupported(); else if (!shape && mode === "office") show("empty", "empty.title", "empty.text"); render(); });
+    sel.addEventListener("change", () => { LANG = sel.value; store.set("imagelab.lang", LANG); applyStatic(); if (mode === "unsupported") showUnsupported(); else if (!shape && mode === "office") { setStatus("status.none", "off"); if ($("#loading").hidden) show("empty", "empty.title", "empty.text"); } render(); });
     $$(".pill").forEach((b) => b.addEventListener("click", () => { ch = b.dataset.ch; updateTexts(); drawHist(); }));
     bindLevels();
     $("#autoLv").addEventListener("click", () => { if (!srcHist) return; Object.assign(P, IL.autoLevels(srcHist)); preset = "custom"; syncSliders(); changed(); });
@@ -588,6 +678,13 @@
     $("#loadBtn").addEventListener("click", () => $("#fileIn").click());
     bindDrop();
     $("#fileIn").addEventListener("change", (e) => { loadOwnPhoto(e.target.files[0]); e.target.value = ""; });
+    // In PowerPoint i link si aprono nel browser di sistema, non dentro il pannello
+    $$(".links a").forEach((el) => el.addEventListener("click", (e) => {
+      if (!inOffice) return;
+      try {
+        if (Office.context.requirements.isSetSupported("OpenBrowserWindowApi", "1.1")) { e.preventDefault(); Office.context.ui.openBrowserWindow(el.href); }
+      } catch (err) { /* il link si apre normalmente */ }
+    }));
     let rz = 0;
     window.addEventListener("resize", () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { drawHist(); placeLevelLabels(); }); });
   }
@@ -603,7 +700,10 @@
     LANG = detectLang();
     bindUI();
     applyStatic();
-    if (!inOffice) { startDemo(); return; }
+    if (!inOffice) { document.body.classList.add("web"); startDemo(); return; }
+    startOffice();
+  }
+  function startOffice() {
     let ok = false;
     try { ok = Office.context.requirements.isSetSupported("PowerPointApi", "1.10"); } catch (e) { ok = false; }
     if (!ok) { mode = "unsupported"; showUnsupported(); return; }
@@ -619,7 +719,16 @@
   } else {
     Office.onReady((info) => {
       inOffice = !!(info && info.host === Office.HostType.PowerPoint);
-      start();
+      if (!started) { start(); return; }
+      // PowerPoint ha risposto dopo il tempo di attesa (computer lento): lascia la prova e collega la presentazione
+      if (inOffice && mode === "demo") {
+        document.body.classList.remove("web");
+        $("#loadRow").hidden = true;
+        $("#preview").classList.remove("droppable");
+        P = IL.defaults(); baseline = IL.defaults(); preset = "nat"; full = prev = null;
+        LANG = detectLang(); $("#lang").value = LANG; applyStatic();
+        startOffice();
+      }
     });
     setTimeout(start, 2500); // se Office.js non risponde (pagina aperta nel browser) parte la prova
   }

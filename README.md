@@ -55,6 +55,8 @@ Il pulsante **Image Lab** compare nella scheda Home, nel gruppo «The Ultraspeak
 | `assets/` | Loghi SVG (Image Lab, The Ultraspeaker, Arena, cursori) e icone PNG (16–300 px) |
 | `fonts/` | Quicksand in woff2 (400, 500, 600, 700) e licenza OFL |
 | `GUIDA-INSTALLAZIONE.html` | Guida passo passo |
+| `support.html`, `privacy.html`, `terms.html`, `legal.css` | Pagine di supporto, privacy e condizioni d’uso (IT/EN) richieste dallo store |
+| `store/` | Testi della scheda nelle 5 lingue, screenshot 1366×768, presentazione di prova, istruzioni per Partner Center |
 
 ## Note per il Marketplace Microsoft
 

@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Ultraspeaker Image Lab</title>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/image-lab-icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/image-lab-icon-16.png">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="apple-touch-icon" href="assets/image-lab-icon-180.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#000000">
 <!-- Office.js: in PowerPoint collega il pannello alla presentazione. Nel browser il pannello parte in modalità prova. -->
 <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 <style>
@@ -26,6 +32,11 @@ button{cursor:pointer}
 button:disabled{cursor:default;opacity:.45}
 :focus-visible{outline:2px solid #ffffff;outline-offset:2px}
 .app{min-height:100vh;display:flex;flex-direction:column}
+/* Versione web su computer: colonna centrata, non a tutta pagina */
+body.web{background:#0a0a0a}
+body.web .app{width:100%;max-width:760px;margin:0 auto;background:var(--bg);border-inline:1px solid var(--line)}
+body.web .preview{max-height:46vh}
+@media (max-width:560px){body.web .preview{max-height:38vh}}
 
 /* Intestazione */
 .brand{flex:none;padding:14px 18px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
@@ -45,8 +56,9 @@ button:disabled{cursor:default;opacity:.45}
 
 /* Anteprima sempre visibile: resta ferma in alto mentre il resto del pannello scorre */
 .pin{position:sticky;top:0;z-index:6;background:var(--bg);margin:-14px -18px 0;padding:10px 18px 10px;border-bottom:1px solid var(--line)}
-.preview{position:relative;border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#1a1a1a 0 25%,#111111 0 50%) 0 0/16px 16px;border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;min-height:120px}
-.preview canvas{display:block;max-width:100%;max-height:min(200px,32vh);height:auto}
+/* Riquadro dell'anteprima: segue la forma della foto fino a 21:9; le foto più larghe restano intere con spazio sopra e sotto */
+.preview{position:relative;width:100%;aspect-ratio:var(--ar,16/9);max-height:min(200px,32vh);border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#1a1a1a 0 25%,#111111 0 50%) 0 0/16px 16px;border:1px solid var(--line-2)}
+.preview canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
 .preview.picking canvas{cursor:crosshair}
 .badge-orig{position:absolute;left:8px;top:8px;padding:4px 8px;border-radius:5px;background:rgba(0,0,0,.72);font-size:10px;font-weight:700;letter-spacing:.12em;display:none}
 .preview.before .badge-orig{display:block}
@@ -111,6 +123,7 @@ button:disabled{cursor:default;opacity:.45}
 .sl::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:#ffffff;border:2px solid #000000;box-shadow:0 0 0 1px #ffffff}
 .sl::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#ffffff;border:2px solid #000000;box-shadow:0 0 0 1px #ffffff}
 .note{font-size:11px;line-height:1.5;color:var(--ink-3)}
+.links{margin:-8px 0 0}.links a{color:var(--ink-2)}
 
 .foot{flex:none;position:sticky;bottom:0;z-index:5;background:var(--bg);padding:12px 18px 14px;border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .foot.three{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -130,6 +143,7 @@ button:disabled{cursor:default;opacity:.45}
 .drop{position:fixed;inset:10px;z-index:20;border:2px dashed #ffffff;border-radius:14px;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px;font-size:15px;font-weight:700;pointer-events:none}
 .drop img{width:70px;height:auto}
 .preview.droppable{outline:1px dashed #555555;outline-offset:4px}
+@media (pointer:coarse){.preview.droppable{outline:none}[data-i18n="orDrop"]{display:none}}
 .toast{position:fixed;left:50%;bottom:130px;transform:translate(-50%,12px);background:#ffffff;color:#000000;font-weight:700;font-size:12px;padding:9px 14px;border-radius:9px;opacity:0;pointer-events:none;transition:.2s;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .spinner{width:22px;height:22px;border-radius:50%;border:2px solid #333333;border-top-color:#ffffff;animation:sp 0.8s linear infinite}
@@ -219,6 +233,7 @@ button:disabled{cursor:default;opacity:.45}
     <div class="sep"></div>
     <section id="sliders"></section>
     <p class="note" id="note"></p>
+    <p class="note links"><a href="support.html" target="_blank" rel="noopener" data-i18n="support"></a> · <a href="privacy.html" target="_blank" rel="noopener" data-i18n="privacy"></a> · <a href="terms.html" target="_blank" rel="noopener" data-i18n="terms"></a></p>
   </main>
 
   <footer class="foot" id="foot" hidden>

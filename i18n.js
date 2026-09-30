@@ -3,6 +3,13 @@ window.IL_I18N = {
   langs: [["it", "Italiano"], ["en", "English"], ["es", "Español"], ["fr", "Français"], ["de", "Deutsch"]],
 
   it: {
+    "shareMobile": "Salva o condividi",
+    "shareReady": "Tocca di nuovo per condividere",
+    "noteMobile": "Sul telefono “Salva o condividi” apre il menu del sistema: scegli “Salva immagine” per metterla nelle Foto oppure inviala con WhatsApp, Messaggi o Mail.",
+    "toast.shared": "Foto pronta",
+    "support": "Supporto",
+    "privacy": "Privacy",
+    "terms": "Condizioni d’uso",
     "dropHere": "Trascina qui la foto",
     "orDrop": "oppure trascinala sull’anteprima",
     "noteArtifact": "Demo: prova i cursori sulla foto di esempio o su una tua foto. In PowerPoint “Applica alla slide” sostituisce la foto nella slide e conserva l’originale.",
@@ -55,6 +62,13 @@ window.IL_I18N = {
   },
 
   en: {
+    "shareMobile": "Save or share",
+    "shareReady": "Tap again to share",
+    "noteMobile": "On your phone, “Save or share” opens the system menu: choose “Save Image” to add it to Photos, or send it with WhatsApp, Messages or Mail.",
+    "toast.shared": "Photo ready",
+    "support": "Support",
+    "privacy": "Privacy",
+    "terms": "Terms of use",
     "dropHere": "Drop the photo here",
     "orDrop": "or drag it onto the preview",
     "noteArtifact": "Demo: try the sliders on the sample photo or on one of yours. In PowerPoint “Apply to slide” replaces the photo on the slide and keeps the original.",
@@ -107,6 +121,13 @@ window.IL_I18N = {
   },
 
   es: {
+    "shareMobile": "Guardar o compartir",
+    "shareReady": "Toca otra vez para compartir",
+    "noteMobile": "En el móvil, “Guardar o compartir” abre el menú del sistema: elige “Guardar imagen” para añadirla a Fotos o envíala por WhatsApp, Mensajes o Mail.",
+    "toast.shared": "Foto lista",
+    "support": "Soporte",
+    "privacy": "Privacidad",
+    "terms": "Condiciones de uso",
     "dropHere": "Suelta aquí la foto",
     "orDrop": "o arrástrala a la vista previa",
     "noteArtifact": "Demo: prueba los controles con la foto de ejemplo o con una tuya. En PowerPoint “Aplicar a la diapositiva” sustituye la foto y conserva el original.",
@@ -159,6 +180,13 @@ window.IL_I18N = {
   },
 
   fr: {
+    "shareMobile": "Enregistrer ou partager",
+    "shareReady": "Touchez à nouveau pour partager",
+    "noteMobile": "Sur téléphone, « Enregistrer ou partager » ouvre le menu du système : choisissez « Enregistrer l’image » pour l’ajouter à Photos, ou envoyez-la avec WhatsApp, Messages ou Mail.",
+    "toast.shared": "Photo prête",
+    "support": "Assistance",
+    "privacy": "Confidentialité",
+    "terms": "Conditions d’utilisation",
     "dropHere": "Déposez la photo ici",
     "orDrop": "ou faites-la glisser sur l’aperçu",
     "noteArtifact": "Démo : essayez les réglages sur la photo d’exemple ou sur l’une des vôtres. Dans PowerPoint, « Appliquer à la diapositive » remplace la photo et conserve l’original.",
@@ -211,6 +239,13 @@ window.IL_I18N = {
   },
 
   de: {
+    "shareMobile": "Sichern oder teilen",
+    "shareReady": "Zum Teilen erneut tippen",
+    "noteMobile": "Auf dem Handy öffnet „Sichern oder teilen“ das Systemmenü: Wählen Sie „Bild sichern“, um es in Fotos zu speichern, oder senden Sie es per WhatsApp, Nachrichten oder Mail.",
+    "toast.shared": "Foto bereit",
+    "support": "Support",
+    "privacy": "Datenschutz",
+    "terms": "Nutzungsbedingungen",
     "dropHere": "Foto hier ablegen",
     "orDrop": "oder auf die Vorschau ziehen",
     "noteArtifact": "Demo: Testen Sie die Regler am Beispielfoto oder an einem eigenen Foto. In PowerPoint ersetzt „Auf Folie anwenden“ das Foto auf der Folie und behält das Original.",
