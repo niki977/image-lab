@@ -41,7 +41,9 @@ body.web .preview{max-height:46vh}
 /* Intestazione */
 .brand{flex:none;padding:14px 18px 12px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .brand-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.lockup{display:block;width:min(190px,58%);height:auto;margin-top:2px}
+.brandlink{display:block;width:min(190px,58%);border-radius:6px}
+.brandlink:hover{opacity:.85}
+.lockup{display:block;width:100%;height:auto;margin-top:2px}
 .lang{display:flex;align-items:center;gap:6px;flex:none}
 .lang svg{width:16px;height:16px;stroke:#9a9a9a;fill:none;stroke-width:1.8}
 .lang select{height:30px;padding:0 6px;border-radius:7px;background:#111111;border:1px solid #333333;font-size:12px;font-weight:600}
@@ -190,7 +192,7 @@ body.web .preview{max-height:46vh}
 <div class="app">
   <header class="brand">
     <div class="brand-row">
-      <img class="lockup" src="assets/logo-image-lab-white.svg" alt="The Ultraspeaker Image Lab">
+      <a class="ext brandlink" href="https://www.theultraspeaker.com/" target="_blank" rel="noopener" title="theultraspeaker.com"><img class="lockup" src="assets/logo-image-lab-white.svg" alt="The Ultraspeaker Image Lab"></a>
       <label class="lang">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
         <select id="lang" data-i18n-aria="lang"></select>

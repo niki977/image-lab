@@ -1182,7 +1182,7 @@
     bindDrop();
     $("#fileIn").addEventListener("change", (e) => { loadOwnPhoto(e.target.files[0]); e.target.value = ""; });
     // In PowerPoint i link si aprono nel browser di sistema, non dentro il pannello
-    $$(".links a").forEach((el) => el.addEventListener("click", (e) => {
+    $$(".links a, a.ext").forEach((el) => el.addEventListener("click", (e) => {
       if (!inOffice) return;
       try {
         if (Office.context.requirements.isSetSupported("OpenBrowserWindowApi", "1.1")) { e.preventDefault(); Office.context.ui.openBrowserWindow(el.href); }
