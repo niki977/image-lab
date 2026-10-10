@@ -29,6 +29,8 @@ Select a photo and open Image Lab from the Home tab:
 - Temperature and tint, plus a neutral-point picker that fixes colour casts with one click.
 - Quick styles: Natural, Stage, Black & white, Warm and Enhance.
 - Before / After comparison in the pane.
+- Zoom to check fine detail (pinch on touch screens, zoom slider with mouse), unlimited Undo / Redo.
+- Crop to aspect ratios, social media formats (Instagram, Facebook, LinkedIn, X, YouTube, Pinterest, WhatsApp), slides, print sizes or a custom size in pixels or centimetres.
 
 Non-destructive: when you apply, the adjusted photo takes the place of the original with the same position, size and rotation. The original stays on the slide, hidden, together with your settings. Select the photo again to change the adjustments or go back to the original at any time.
 
@@ -58,6 +60,8 @@ Seleziona una foto e apri Image Lab dalla scheda Home:
 - Temperatura e tinta, più il punto neutro che corregge le dominanti di colore con un clic.
 - Stili rapidi: Naturale, Palco, Bianco e nero, Caldo e Migliora.
 - Confronto Prima / Dopo nel pannello.
+- Zoom per controllare i dettagli (pizzico sugli schermi touch, cursore con il mouse), Annulla / Ripeti passo per passo.
+- Ritaglio per proporzioni, formati social (Instagram, Facebook, LinkedIn, X, YouTube, Pinterest, WhatsApp), diapositive, stampa o misure su misura in pixel o centimetri.
 
 Non distruttivo: quando applichi, la foto regolata prende il posto dell’originale con stessa posizione, misura e rotazione. L’originale resta nella slide, nascosto, insieme alle regolazioni. Riseleziona la foto per cambiare le regolazioni o tornare all’originale quando vuoi.
 
@@ -87,6 +91,8 @@ Selecciona una foto y abre Image Lab desde la pestaña Inicio:
 - Temperatura y matiz, y un punto neutro que corrige dominantes de color con un clic.
 - Estilos rápidos: Natural, Escenario, Blanco y negro, Cálido y Mejorar.
 - Comparación Antes / Después en el panel.
+- Zoom para revisar los detalles (pellizco en pantallas táctiles, control deslizante con el ratón), Deshacer / Rehacer paso a paso.
+- Recorte por proporciones, formatos sociales (Instagram, Facebook, LinkedIn, X, YouTube, Pinterest, WhatsApp), diapositivas, impresión o tamaño personalizado en píxeles o centímetros.
 
 No destructivo: al aplicar, la foto ajustada sustituye a la original con la misma posición, tamaño y rotación. El original queda en la diapositiva, oculto, junto con los ajustes. Vuelve a seleccionar la foto para cambiarlos o volver al original cuando quieras.
 
@@ -116,6 +122,8 @@ Sélectionnez une photo et ouvrez Image Lab depuis l’onglet Accueil :
 - Température et teinte, plus un point neutre qui corrige les dominantes de couleur en un clic.
 - Styles rapides : Naturel, Scène, Noir et blanc, Chaud et Améliorer.
 - Comparaison Avant / Après dans le volet.
+- Zoom pour vérifier les détails (pincement sur écran tactile, curseur à la souris), Annuler / Rétablir pas à pas.
+- Recadrage par proportions, formats réseaux sociaux (Instagram, Facebook, LinkedIn, X, YouTube, Pinterest, WhatsApp), diapositives, impression ou taille personnalisée en pixels ou centimètres.
 
 Non destructif : en appliquant, la photo réglée remplace l’originale avec la même position, taille et rotation. L’original reste sur la diapositive, masqué, avec vos réglages. Sélectionnez à nouveau la photo pour modifier les réglages ou revenir à l’original à tout moment.
 
@@ -145,6 +153,8 @@ Wählen Sie ein Foto aus und öffnen Sie Image Lab über die Registerkarte Start
 - Temperatur und Tönung sowie ein Neutralpunkt, der Farbstiche mit einem Klick korrigiert.
 - Schnellstile: Natürlich, Bühne, Schwarzweiß, Warm und Verbessern.
 - Vorher-/Nachher-Vergleich im Aufgabenbereich.
+- Zoom für Details (Zwei-Finger-Geste auf Touchscreens, Zoomregler mit der Maus), Rückgängig / Wiederholen Schritt für Schritt.
+- Zuschnitt nach Seitenverhältnis, Social-Media-Formaten (Instagram, Facebook, LinkedIn, X, YouTube, Pinterest, WhatsApp), Folien, Druckformaten oder eigener Größe in Pixeln oder Zentimetern.
 
 Nicht destruktiv: Beim Anwenden ersetzt das bearbeitete Foto das Original mit gleicher Position, Größe und Drehung. Das Original bleibt ausgeblendet auf der Folie, zusammen mit Ihren Einstellungen. Wählen Sie das Foto erneut aus, um die Einstellungen zu ändern oder jederzeit zum Original zurückzukehren.
 

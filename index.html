@@ -57,8 +57,40 @@ body.web .preview{max-height:46vh}
 /* Anteprima sempre visibile: resta ferma in alto mentre il resto del pannello scorre */
 .pin{position:sticky;top:0;z-index:6;background:var(--bg);margin:-14px -18px 0;padding:10px 18px 10px;border-bottom:1px solid var(--line)}
 /* Riquadro dell'anteprima: segue la forma della foto fino a 21:9; le foto più larghe restano intere con spazio sopra e sotto */
-.preview{position:relative;width:100%;aspect-ratio:var(--ar,16/9);max-height:min(200px,32vh);border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#1a1a1a 0 25%,#111111 0 50%) 0 0/16px 16px;border:1px solid var(--line-2)}
-.preview canvas{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+.pvrow{display:flex;gap:8px;align-items:stretch}
+.preview{position:relative;flex:1;min-width:0;aspect-ratio:var(--ar,16/9);max-height:min(200px,32vh);border-radius:8px;overflow:hidden;background:repeating-conic-gradient(#1a1a1a 0 25%,#111111 0 50%) 0 0/16px 16px;border:1px solid var(--line-2);touch-action:pan-x pan-y}
+.preview canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
+.preview.zoomed canvas{cursor:zoom-in}
+.preview.panning canvas{cursor:grabbing}
+/* Cursore verticale dello zoom (mouse e trackpad): in basso la foto intera, in alto ingrandita */
+.zoombar{flex:none;width:22px;display:flex;justify-content:center;padding:6px 0;cursor:ns-resize;touch-action:none;border-radius:8px}
+.zoombar:focus-visible{outline:2px solid #ffffff;outline-offset:1px}
+.ztrack{position:relative;width:4px;height:100%;border-radius:2px;background:var(--line-3)}
+.zfill{position:absolute;left:0;right:0;bottom:0;border-radius:2px;background:#ffffff}
+.zthumb{position:absolute;left:50%;width:16px;height:16px;margin:0 0 -8px -8px;border-radius:50%;background:#ffffff;border:2px solid #000000;box-shadow:0 0 0 1px #ffffff}
+@media (hover:none) and (pointer:coarse){.zoombar{display:none}}
+/* Barra strumenti sotto l'anteprima */
+.tools{display:flex;align-items:center;gap:6px;margin-top:8px}
+.tb{height:30px;min-width:30px;padding:0 8px;border-radius:7px;border:1px solid #333333;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:12px;font-weight:600;white-space:nowrap}
+.tb svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;flex:none}
+.tb[aria-pressed="true"]{background:#ffffff;color:#000000;border-color:#ffffff}
+.tb.lbl{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.zhint{font-size:10.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* Ritaglio */
+.cropbox{position:absolute;border:1.5px solid #ffffff;box-shadow:0 0 0 9999px rgba(0,0,0,.58);cursor:move;touch-action:none;
+  background-image:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+  linear-gradient(180deg,transparent calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.ch{position:absolute;width:16px;height:16px;background:#ffffff;border:2px solid #000000;border-radius:4px;touch-action:none}
+.ch.nw{left:-2px;top:-2px;cursor:nwse-resize}.ch.ne{right:-2px;top:-2px;cursor:nesw-resize}
+.ch.sw{left:-2px;bottom:-2px;cursor:nesw-resize}.ch.se{right:-2px;bottom:-2px;cursor:nwse-resize}
+@media (pointer:coarse){.ch{width:24px;height:24px}}
+.croppanel{display:flex;flex-direction:column;gap:10px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:10px;padding:12px}
+.fld{display:flex;flex-direction:column;gap:5px;font-size:11.5px;color:var(--ink-2)}
+.fld select,.fld input,.croppanel select,.croppanel input{height:32px;border-radius:7px;background:#111111;border:1px solid #333333;padding:0 8px;font-size:12.5px;font-weight:600;min-width:0}
+.cust{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto;gap:6px;align-items:end}
+.cust .x{padding-bottom:8px;color:var(--ink-3)}
+.warnline{margin:0;font-size:11.5px;line-height:1.45;color:#ffcf80}
+.ghost.primary{background:#ffffff;color:#000000;border-color:#ffffff}
 .preview.picking canvas{cursor:crosshair}
 .badge-orig{position:absolute;left:8px;top:8px;padding:4px 8px;border-radius:5px;background:rgba(0,0,0,.72);font-size:10px;font-weight:700;letter-spacing:.12em;display:none}
 .preview.before .badge-orig{display:block}
@@ -101,6 +133,10 @@ body.web .preview{max-height:46vh}
 .hint{font-size:11.5px;line-height:1.45;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line-2);border-radius:8px;padding:8px 10px}
 
 .chips{display:flex;gap:6px;flex-wrap:wrap}
+.qbox{display:flex;flex-direction:column;gap:8px}
+.qbtn{height:44px;border-radius:10px;border:1px solid #ffffff;background:transparent;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px}
+.qbtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8}
+.qbtn[aria-pressed="true"]{background:#ffffff;color:#000000}
 .chip{height:30px;padding:0 12px;border-radius:8px;border:1px solid #333333;background:var(--surface-2);color:var(--ink-2);font-size:12px;font-weight:600;white-space:nowrap}
 .chip[aria-pressed="true"]{border-color:#ffffff;color:#ffffff;background:#262626}
 .sep{height:1px;background:var(--line);flex:none}
@@ -177,11 +213,50 @@ body.web .preview{max-height:46vh}
   <!-- Editor -->
   <main class="scroll" id="editor" hidden>
     <div class="pin">
-    <div class="preview" id="preview">
-        <canvas id="pv" data-i18n-aria="preview" role="img"></canvas>
-        <div class="badge-orig" data-i18n="original"></div>
+      <div class="pvrow">
+        <div class="preview" id="preview">
+          <canvas id="pv" data-i18n-aria="preview" role="img"></canvas>
+          <div class="badge-orig" data-i18n="original"></div>
+          <div class="cropbox" id="cropBox" hidden>
+            <span class="ch nw" data-h="nw"></span><span class="ch ne" data-h="ne"></span><span class="ch sw" data-h="sw"></span><span class="ch se" data-h="se"></span>
+          </div>
+        </div>
+        <div class="zoombar" id="zoombar" role="slider" tabindex="0" aria-orientation="vertical" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria="zoom">
+          <div class="ztrack"><div class="zfill" id="zfill"></div><div class="zthumb" id="zthumb"></div></div>
+        </div>
+      </div>
+      <div class="tools">
+        <button type="button" class="tb" id="undoBtn" data-i18n-aria="undo" data-i18n-title="undo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button type="button" class="tb" id="redoBtn" data-i18n-aria="redo" data-i18n-title="redo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+        <button type="button" class="tb" id="cropBtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="crop"></span></button>
+        <span class="zhint" id="zoomHint"></span>
+        <button type="button" class="tb lbl" id="zoomLbl" data-i18n-title="fitTitle"></button>
       </div>
     </div>
+
+    <section class="croppanel" id="cropPanel" hidden>
+      <div class="h" data-i18n="crop.title"></div>
+      <label class="fld"><span data-i18n="crop.format"></span><select id="cropFmt"></select></label>
+      <div class="cust" id="cropCustom" hidden>
+        <label class="fld"><span data-i18n="crop.width"></span><input id="cW" type="number" min="1" step="any" inputmode="decimal"></label>
+        <span class="x">×</span>
+        <label class="fld"><span data-i18n="crop.height"></span><input id="cH" type="number" min="1" step="any" inputmode="decimal"></label>
+        <label class="fld"><span data-i18n="crop.unit"></span><select id="cU"><option value="px">px</option><option value="cm">cm</option></select></label>
+        <label class="fld" id="cDpiWrap" hidden><span data-i18n="crop.dpi"></span><input id="cDpi" type="number" min="72" max="1200" step="1" value="300" inputmode="numeric"></label>
+      </div>
+      <div class="row" style="flex-wrap:wrap">
+        <button type="button" class="ghost" id="cropSwap"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="11" height="13" rx="1.5"/><path d="M12 3h4a4 4 0 0 1 4 4v4"/><path d="M17 8l3 3 3-3"/></svg><span data-i18n="crop.swap"></span></button>
+      </div>
+      <p class="note" id="cropInfo" style="margin:0"></p>
+      <p class="warnline" id="cropWarn" hidden></p>
+      <p class="note" data-i18n="crop.hint" style="margin:0"></p>
+      <div class="row" style="flex-wrap:wrap">
+        <button type="button" class="ghost" id="cropRemove" data-i18n="crop.remove"></button>
+        <span style="flex:1"></span>
+        <button type="button" class="ghost" id="cropCancel" data-i18n="crop.cancel"></button>
+        <button type="button" class="ghost primary" id="cropApply" data-i18n="crop.apply"></button>
+      </div>
+    </section>
     <div class="row" id="loadRow" style="flex-wrap:wrap" hidden>
       <button type="button" class="ghost" id="loadBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 18l5-5 4 4 3-3 4 4"/></svg><span data-i18n="loadPhoto"></span></button>
       <span class="note" data-i18n="orDrop"></span>
@@ -223,6 +298,17 @@ body.web .preview{max-height:46vh}
         <button type="button" class="ghost icon" id="resetLv" data-i18n-aria="resetLevels" data-i18n-title="resetLevels"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/></svg></button>
       </div>
       <div class="hint" id="pickHint" data-i18n="pickHint" hidden></div>
+    </section>
+
+    <!-- Migliora qualità: pulizia automatica in un clic -->
+    <section class="qbox">
+      <button type="button" class="qbtn" id="qBtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2 2.2.8-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span data-i18n="quality"></span></button>
+      <p class="note" data-i18n="quality.desc" style="margin:0"></p>
+      <div class="srow" id="qRow" hidden>
+        <label for="qAmt" data-i18n="quality.amount"></label>
+        <input id="qAmt" class="sl" type="range" min="1" max="100" step="1" value="60">
+        <output for="qAmt" id="qOut"></output>
+      </div>
     </section>
 
     <section style="display:flex;flex-direction:column;gap:8px">
