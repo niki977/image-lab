@@ -22,7 +22,7 @@ Il pacchetto è pronto per l’invio. Prima di iniziare completa i punti marcati
 6. **Convalida del manifest** sul tuo computer (serve Node.js):
    `npx office-addin-manifest validate image-lab-manifest.xml`
    Deve rispondere “The manifest is valid”. Partner Center ripete comunque la stessa verifica al caricamento.
-7. **Ricarica il manifest** nella cartella `wef` del Mac: è cambiato (versione 1.1.0.0, requisiti, link al supporto).
+7. **Ricarica il manifest** nella cartella `wef` del Mac: è cambiato (versione 1.2.0.0, requisiti, link al supporto).
 
 ## 2. Account Partner Center
 

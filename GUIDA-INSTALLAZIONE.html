@@ -8,19 +8,22 @@
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="apple-touch-icon" href="assets/image-lab-icon-180.png">
 <style>
-@font-face{font-family:"Quicksand";font-weight:500;src:url(fonts/quicksand-latin-500-normal.woff2) format("woff2")}
-@font-face{font-family:"Quicksand";font-weight:700;src:url(fonts/quicksand-latin-700-normal.woff2) format("woff2")}
+/* Champagne & Limousines (brand book The Ultraspeaker, p. 17): Regular, Italic, Bold, Bold Italic dalla cartella fonts */
+@font-face{font-family:"Champagne & Limousines";font-weight:100 549;font-style:normal;font-display:swap;src:url(fonts/champagne-limousines-regular.woff2) format("woff2")}
+@font-face{font-family:"Champagne & Limousines";font-weight:550 900;font-style:normal;font-display:swap;src:url(fonts/champagne-limousines-bold.woff2) format("woff2")}
+@font-face{font-family:"Champagne & Limousines";font-weight:100 549;font-style:italic;font-display:swap;src:url(fonts/champagne-limousines-italic.woff2) format("woff2")}
+@font-face{font-family:"Champagne & Limousines";font-weight:550 900;font-style:italic;font-display:swap;src:url(fonts/champagne-limousines-bolditalic.woff2) format("woff2")}
 :root{--bg:#f3f3f3;--surface:#fff;--ink:#000;--ink-2:#444;--line:#ddd;--soft:#ececec;--code:#efefef}
 @media (prefers-color-scheme: dark){:root{--bg:#000;--surface:#111;--ink:#fff;--ink-2:#c8c8c8;--line:#2a2a2a;--soft:#222;--code:#1c1c1c;color-scheme:dark}}
-body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.65 "Quicksand","Avenir Next","Segoe UI",Arial,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Champagne & Limousines","Avenir Next","Segoe UI",Arial,sans-serif}
 header{background:#000;color:#fff;padding:28px 16px 22px}
 header .in,main{max-width:760px;margin:0 auto}
 header img{display:block;width:min(300px,75%);height:auto}
 main{padding:28px 16px 64px}
-h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em;text-wrap:balance}
+h1{font-size:28px;font-weight:400;line-height:1.05;margin:0 0 8px;text-wrap:balance}
 .lead{color:var(--ink-2);margin:0 0 28px}
 section{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:16px}
-h2{font-size:16px;margin:0 0 10px;display:flex;gap:10px;align-items:center}
+h2{font-size:18px;line-height:1.2;margin:0 0 10px;display:flex;gap:10px;align-items:center}
 h2 .n{background:var(--ink);color:var(--bg);border-radius:50%;width:24px;height:24px;display:grid;place-items:center;font-size:12px;flex:none}
 p b,li b{font-weight:700}
 ol{padding-left:20px;margin:0}li{margin:6px 0}
@@ -135,7 +138,7 @@ code{background:var(--code);padding:2px 6px;border-radius:5px;font-size:13px;wor
 </ol>
 </section>
 <p class="muted"><a href="support.html" style="color:inherit">Supporto</a> · <a href="privacy.html" style="color:inherit">Privacy</a> · <a href="terms.html" style="color:inherit">Condizioni d’uso</a></p>
-<p class="muted">Il carattere Quicksand è distribuito con licenza SIL Open Font License (file <code>fonts/OFL-Quicksand.txt</code>).</p>
+<p class="muted">Il carattere è Champagne &amp; Limousines di Lauren Thompson (Nymphont), indicato dal brand book di The Ultraspeaker. L’autrice lo concede gratis per uso personale e chiede una donazione per l’uso commerciale e per l’inserimento in siti web.</p>
 <p class="tag"><a href="https://www.theultraspeaker.com/" target="_blank" rel="noopener" style="display:block"><picture><source srcset="assets/logo-ultraspeaker-white.svg" media="(prefers-color-scheme: dark)"><img src="assets/logo-ultraspeaker-black.svg" alt="The Ultraspeaker"></picture></a><a href="mailto:info@theultraspeaker.com" style="color:inherit">Richiedi una consulenza</a> · info@theultraspeaker.com</p>
 </main>
 </body>

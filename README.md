@@ -2,7 +2,8 @@
 
 Add-in per PowerPoint che regola le foto delle slide, come «Regola immagine» di Keynote:
 istogramma con livelli (nero 0%, mezzitoni 50%, bianco 100%), esposizione, contrasto, saturazione,
-luci, ombre, nitidezza, riduzione rumore, temperatura e tinta, stili rapidi e punto neutro.
+luci, ombre, nitidezza, riduzione rumore, temperatura e tinta, stili rapidi e punto neutro,
+migliora qualità, ritaglio, rotazione (90°, 180° e raddrizzamento fino a ±45°), zoom, annulla/ripeti.
 Interfaccia in italiano, inglese, spagnolo, francese e tedesco.
 
 ## Come funziona nella slide
@@ -53,7 +54,7 @@ Il pulsante **Image Lab** compare nella scheda Home, nel gruppo «The Ultraspeak
 | `i18n.js` | Testi nelle 5 lingue |
 | `image-lab-manifest.xml` | Manifest dell’add-in per PowerPoint |
 | `assets/` | Loghi SVG (Image Lab, The Ultraspeaker, Arena, cursori) e icone PNG (16–300 px) |
-| `fonts/` | Quicksand in woff2 (400, 500, 600, 700) e licenza OFL |
+| `fonts/` | Champagne & Limousines in woff2 (Regular, Italic, Bold, Bold Italic), il carattere del brand book. Gratis per uso personale; per uso commerciale e inserimento web l’autrice (Nymphont) chiede una donazione |
 | `GUIDA-INSTALLAZIONE.html` | Guida passo passo |
 | `support.html`, `privacy.html`, `terms.html`, `legal.css` | Pagine di supporto, privacy e condizioni d’uso (IT/EN) richieste dallo store |
 | `store/` | Testi della scheda nelle 5 lingue, screenshot 1366×768, presentazione di prova, istruzioni per Partner Center |

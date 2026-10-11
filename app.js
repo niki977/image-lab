@@ -55,7 +55,7 @@
   }
 
   /* ---------- Stato ---------- */
-  const D = () => Object.assign(IL.defaults(), { crop: null }); // regolazioni di partenza (con ritaglio)
+  const D = () => Object.assign(IL.defaults(), { crop: null, rq: 0, rot: 0 }); // regolazioni di partenza (con ritaglio)
   const snap = (p) => JSON.stringify(Object.assign(D(), p));
   let inOffice = false;
   let mode = "boot";           // demo | office | unsupported
@@ -63,7 +63,9 @@
   let baseline = D();          // regolazioni già applicate alla slide
   let preset = "nat";
   let ch = "rgb", before = false, picking = false, busy = false, restoreArmed = false;
-  let base = null;             // foto di partenza intera: {canvas, w, h}
+  let orig = null;             // foto di partenza intera, dritta: {canvas, w, h}
+  let base = null;             // foto di partenza ruotata (quarti di giro + raddrizzamento): {canvas, w, h}
+  let baseKey = null, workCrop = null;
   let full = null, prev = null;// zona di lavoro (ritagliata): {data, w, h} a piena risoluzione e ridotta
   let fullCanvas = null, prevCanvas = null, prevSrcCanvas = null;
   let prevOut = null, prevHist = null, srcHist = null, workKey = null;
@@ -136,6 +138,7 @@
     $("#qBtn").setAttribute("aria-pressed", String(P.q > 0));
     $("#qRow").hidden = !(P.q > 0);
     if (P.q > 0) { $("#qAmt").value = P.q; $("#qOut").textContent = P.q + "%"; }
+    syncRotUI();
   }
 
   /* ---------- Stili rapidi ---------- */
@@ -155,7 +158,7 @@
       b.textContent = t("p." + k);
       b.setAttribute("aria-pressed", String(preset === k));
       // lo stile cambia le regolazioni, il ritaglio resta
-      b.addEventListener("click", () => { P = Object.assign(D(), PRESETS[k](), { crop: P.crop, q: P.q, qn: P.qn }); preset = k; syncSliders(); changed(); commit(); });
+      b.addEventListener("click", () => { P = Object.assign(D(), PRESETS[k](), { crop: P.crop, q: P.q, qn: P.qn, rq: P.rq, rot: P.rot }); preset = k; syncSliders(); changed(); commit(); });
       box.appendChild(b);
     });
   }
@@ -189,6 +192,9 @@
     $("#undoBtn").disabled = busy || hist.i <= 0;
     $("#redoBtn").disabled = busy || hist.i < 0 || hist.i >= hist.s.length - 1;
     $("#cropBtn").setAttribute("aria-pressed", String(cropMode));
+    $("#rotBtn").setAttribute("aria-pressed", String(!$("#rotPanel").hidden));
+    $("#rotGrid").hidden = $("#rotPanel").hidden || cropMode;
+    if (!$("#rotPanel").hidden) syncRotUI();
     if (mode === "demo") setStatus("status.demo", "");
     else if (shape) setStatus(shape.edited ? "status.edited" : "status.selected", "");
   }
@@ -213,16 +219,45 @@
     const x = clamp(Math.round(c.x * w), 0, w - 1), y = clamp(Math.round(c.y * h), 0, h - 1);
     return { x, y, w: clamp(Math.round(c.w * w), 1, w - x), h: clamp(Math.round(c.h * h), 1, h - y) };
   }
+  /* Rotazione: quarti di giro (P.rq) più un angolo fine (P.rot, ±45°).
+     Con l'angolo fine la foto si ingrandisce quel tanto che basta a riempire il riquadro, senza angoli vuoti:
+     le misure restano quelle della foto, così il ritaglio resta valido mentre si ruota. */
+  const rotQ = () => (((P.rq | 0) % 4) + 4) % 4;
+  const rotA = () => clamp(+P.rot || 0, -45, 45);
+  function ensureBase() {
+    if (!orig) { base = null; return false; }
+    const q = rotQ(), a = rotA(), k = q + "/" + a.toFixed(2);
+    if (base && baseKey === k) return false;
+    baseKey = k;
+    if (!q && !a) { base = orig; return true; }
+    const W = q & 1 ? orig.h : orig.w, H = q & 1 ? orig.w : orig.h;
+    const th = Math.abs(a) * Math.PI / 180, c = Math.cos(th), s = Math.sin(th);
+    const m = a ? Math.max((W * c + H * s) / W, (W * s + H * c) / H) * 1.002 : 1;
+    const cv = canvas(W, H), x = cv.getContext("2d", { willReadFrequently: true });
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high";
+    x.translate(W / 2, H / 2); x.rotate((q * 90 + a) * Math.PI / 180); x.scale(m, m);
+    x.drawImage(orig.canvas, -orig.w / 2, -orig.h / 2);
+    base = { canvas: cv, w: W, h: H };
+    return true;
+  }
   function ensureWorking() {
-    if (!base) return false;
+    if (!orig) return false;
+    ensureBase();
     const want = cropMode ? null : P.crop;
-    const key = JSON.stringify(want);
+    const ck = JSON.stringify(want);
+    const key = ck + "|" + baseKey;
     if (key === workKey && full) return false;
     const r = cropRectPx(want, base.w, base.h);
-    fullCanvas = canvas(r.w, r.h);
-    const fx = fullCanvas.getContext("2d", { willReadFrequently: true });
-    fx.drawImage(base.canvas, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
-    full = { data: fx.getImageData(0, 0, r.w, r.h).data, w: r.w, h: r.h };
+    // stessa zona e stesse misure (si sta solo raddrizzando): zoom e posizione della vista restano
+    const keepView = !!full && workCrop === ck && full.w === r.w && full.h === r.h;
+    if (!want) fullCanvas = base.canvas;
+    else {
+      fullCanvas = canvas(r.w, r.h);
+      fullCanvas.getContext("2d", { willReadFrequently: true }).drawImage(base.canvas, r.x, r.y, r.w, r.h, 0, 0, r.w, r.h);
+    }
+    // i pixel a piena risoluzione si leggono solo quando servono (zoom, esportazione)
+    const fc = fullCanvas;
+    full = { w: r.w, h: r.h, _d: null, get data() { return this._d || (this._d = fc.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, this.w, this.h).data); } };
     const k = Math.min(1, PREVIEW_MAX / Math.max(r.w, r.h));
     const pw = Math.max(1, Math.round(r.w * k)), ph = Math.max(1, Math.round(r.h * k));
     prevSrcCanvas = canvas(pw, ph);
@@ -236,8 +271,8 @@
     srcHist = IL.histogram(prev.data);
     // il riquadro segue la forma della foto fino a 21:9; oltre, la foto resta intera con bande sopra e sotto
     $("#preview").style.setProperty("--ar", String(Math.min(r.w / r.h, 21 / 9)));
-    workKey = key;
-    view.z = 1; view.cx = r.w / 2; view.cy = r.h / 2;
+    workKey = key; workCrop = ck;
+    if (!keepView) { view.z = 1; view.cx = r.w / 2; view.cy = r.h / 2; }
     return true;
   }
 
@@ -250,7 +285,7 @@
     if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); });
   }
   function render() {
-    if (!base) return;
+    if (!orig) return;
     ensureWorking();
     IL.process(prev.data, prev.w, prev.h, P, prevOut.data, cachePrev);
     prevCanvas.getContext("2d").putImageData(prevOut, 0, 0);
@@ -608,7 +643,8 @@
     draft.x = clamp(cx - w / 2, 0, base.w - w); draft.y = clamp(cy - h / 2, 0, base.h - h);
   }
   function enterCrop() {
-    if (!base || busy) return;
+    if (!orig || busy) return;
+    ensureBase();
     picking = false;
     const c = P.crop;
     draft = c ? { id: c.id || "free", swap: !!c.swap, x: c.x * base.w, y: c.y * base.h, w: c.w * base.w, h: c.h * base.h }
@@ -734,6 +770,93 @@
     cb.addEventListener("pointercancel", end);
   }
 
+  /* ---------- Rotazione ---------- */
+  const fmtDeg = (v) => (Math.round(v * 10) / 10).toLocaleString(LANG, { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + "°";
+  // ruota di un quarto di giro in senso orario un rettangolo normalizzato (0…1)
+  const turnNorm = (c) => ({ x: 1 - c.y - c.h, y: c.x, w: c.h, h: c.w });
+  const swapsRatio = (id) => id && id !== "free" && id !== "orig" && id !== "custom";
+  function setRot(q, a, live) {
+    if (!orig) return;
+    q = ((q % 4) + 4) % 4;
+    a = Math.round(clamp(+a || 0, -45, 45) * 10) / 10;
+    const dq = (q - rotQ() + 4) % 4;
+    if (dq) {
+      // il ritaglio gira insieme alla foto
+      ensureBase();
+      let W = base.w, H = base.h;
+      for (let i = 0; i < dq; i++) {
+        if (P.crop) {
+          const c = P.crop;
+          P.crop = Object.assign({}, c, turnNorm(c), { ow: c.oh, oh: c.ow, swap: swapsRatio(c.id) ? !c.swap : c.swap,
+            cw: c.id === "custom" ? c.ch : c.cw, ch: c.id === "custom" ? c.cw : c.ch });
+        }
+        if (cropMode && draft) {
+          const d = draft;
+          Object.assign(d, { x: H - d.y - d.h, y: d.x, w: d.h, h: d.w });
+          if (swapsRatio(d.id)) d.swap = !d.swap;
+          if (d.id === "custom") { const w = $("#cW").value; $("#cW").value = $("#cH").value; $("#cH").value = w; }
+        }
+        const t0 = W; W = H; H = t0;
+      }
+      frameLock = false;
+    }
+    P.rq = q; P.rot = a;
+    syncRotUI();
+    changed();
+    if (cropMode) updateCropInfo();
+    if (!live) commit();
+  }
+  function syncRotUI() {
+    const a = rotA(), q = rotQ();
+    const f = $("#rotFine"), n = $("#rotNum");
+    if (!f) return;
+    if (document.activeElement !== f) f.value = a;
+    if (document.activeElement !== n) n.value = a;
+    let tot = q * 90 + a; if (tot > 180) tot -= 360;
+    $("#rotInfo").textContent = t("rot.total", { a: fmtDeg(tot) });
+  }
+  function toggleRot(open) {
+    const p = $("#rotPanel");
+    p.hidden = open == null ? !p.hidden : !open;
+    if (!p.hidden) { syncRotUI(); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); } }
+    updateTexts();
+  }
+  function bindRot() {
+    $("#rotBtn").addEventListener("click", () => toggleRot());
+    $("#rotDone").addEventListener("click", () => toggleRot(false));
+    $("#rotL").addEventListener("click", () => setRot(rotQ() - 1, rotA()));
+    $("#rotR").addEventListener("click", () => setRot(rotQ() + 1, rotA()));
+    $("#rot180").addEventListener("click", () => setRot(rotQ() + 2, rotA()));
+    $("#rotReset").addEventListener("click", () => setRot(0, 0));
+    const f = $("#rotFine"), n = $("#rotNum");
+    f.addEventListener("input", () => setRot(rotQ(), +f.value, true));
+    f.addEventListener("change", commit);
+    f.addEventListener("dblclick", () => setRot(rotQ(), 0));
+    n.addEventListener("input", () => { if (n.value !== "" && isFinite(+n.value)) setRot(rotQ(), +n.value, true); });
+    n.addEventListener("change", () => { setRot(rotQ(), +n.value || 0); n.value = rotA(); });
+    n.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault();
+      const st = e.shiftKey ? 0.1 : 0.5;
+      setRot(rotQ(), rotA() + (e.key === "ArrowUp" ? st : -st), true);
+      n.value = rotA();
+    });
+    n.addEventListener("keyup", (e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") commit(); });
+    // frecce su e giù: un clic sposta di 0,5° (0,1° con Maiusc), tenendo premuto l'angolo continua a cambiare
+    [["#rotUp", 1], ["#rotDown", -1]].forEach(([sel, dir]) => {
+      const b = $(sel); let tm = null, iv = null;
+      const step = (e) => setRot(rotQ(), rotA() + dir * (e && e.shiftKey ? 0.1 : 0.5), true);
+      const stop = () => { if (tm || iv) { clearTimeout(tm); clearInterval(iv); tm = iv = null; commit(); } };
+      b.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault(); step(e);
+        tm = setTimeout(() => { iv = setInterval(() => step(e), 70); }, 380);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach((ev) => b.addEventListener(ev, stop));
+      b.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); step(e); commit(); } });
+    });
+  }
+
   /* ---------- Caricamento immagine ---------- */
   async function useImage(img) {
     let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
@@ -747,7 +870,7 @@
     const x = c.getContext("2d");
     x.imageSmoothingQuality = "high";
     x.drawImage(img, 0, 0, w, h);
-    base = { canvas: c, w, h };
+    orig = { canvas: c, w, h }; base = null; baseKey = null; workCrop = null;
     if (cropMode) { cropMode = false; draft = null; $("#cropPanel").hidden = true; $("#cropBox").hidden = true; }
     full = null; workKey = null;
   }
@@ -862,14 +985,14 @@
       });
       if (seq !== loadSeq) return;
       if (info.none || info.multi || info.notImage) {
-        shape = null; lastKey = ""; base = full = prev = null;
+        shape = null; lastKey = ""; orig = base = full = prev = null;
         if (cropMode) { cropMode = false; draft = null; $("#cropPanel").hidden = true; }
         setStatus("status.none", "off");
         show("empty", "empty.title", info.multi ? "empty.multi" : info.notImage ? "empty.notImage" : "empty.text");
         return;
       }
       const key = info.slideId + "/" + info.id;
-      if (!force && key === lastKey && base) return; // stessa immagine: niente da ricaricare
+      if (!force && key === lastKey && orig) return; // stessa immagine: niente da ricaricare
       lastKey = key;
       setStatus("status.loading", "busy");
       show("loading");
@@ -978,7 +1101,7 @@
   }
 
   async function apply() {
-    if (busy || !base || cropMode) return;
+    if (busy || !orig || cropMode) return;
     if (mode === "demo") {
       if (shareFile) { const f = shareFile; shareFile = null; await shareOrSave(f); return; }
       busy = true; updateTexts();
@@ -1013,10 +1136,14 @@
         try { ctx.presentation.setSelectedShapes([]); await ctx.sync(); } catch (e) { /* alcune versioni non accettano la selezione vuota */ }
         // con il ritaglio la foto mantiene le proporzioni nuove dentro lo spazio dell'originale, centrata
         let left = o.left, top = o.top, width = o.width, height = o.height;
-        if (P.crop) {
+        if (rotQ() & 1) { // un quarto di giro: lo spazio si gira attorno al centro
+          left = o.left + (o.width - o.height) / 2; top = o.top + (o.height - o.width) / 2; width = o.height; height = o.width;
+        }
+        if (P.crop || rotQ()) {
+          const bx = { left, top, width, height };
           const a = fin.w / fin.h;
-          if (a > o.width / o.height) { height = o.width / a; top = o.top + (o.height - height) / 2; }
-          else { width = o.height * a; left = o.left + (o.width - width) / 2; }
+          if (a > bx.width / bx.height) { height = bx.width / a; top = bx.top + (bx.height - height) / 2; }
+          else { width = bx.height * a; left = bx.left + (bx.width - width) / 2; }
         }
         return { left, top, width, height, rotation: s.rotation, z: s.zOrderPosition, ids: slide.shapes.items.map((x) => x.id) };
       });
@@ -1147,6 +1274,7 @@
     bindLevels();
     bindZoom();
     bindCrop();
+    bindRot();
     $("#qBtn").addEventListener("click", () => {
       if (!full) return;
       if (P.q > 0) { P.q = 0; }
@@ -1165,6 +1293,7 @@
     $("#resetAll").addEventListener("click", () => {
       if (cropMode) { cropMode = false; draft = null; $("#cropPanel").hidden = true; $("#cropBox").hidden = true; }
       P = D(); preset = "nat"; syncSliders(); changed(); commit();
+      frameLock = false;
     });
     $("#restoreBtn").addEventListener("click", restore);
     $("#applyBtn").addEventListener("click", apply);
@@ -1228,7 +1357,7 @@
         document.body.classList.remove("web");
         $("#loadRow").hidden = true;
         $("#preview").classList.remove("droppable");
-        P = D(); baseline = D(); preset = "nat"; base = full = prev = null;
+        P = D(); baseline = D(); preset = "nat"; orig = base = full = prev = null;
         LANG = detectLang(); $("#lang").value = LANG; applyStatic();
         startOffice();
       }
