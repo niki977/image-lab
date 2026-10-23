@@ -63,6 +63,7 @@
   let baseline = D();          // regolazioni già applicate alla slide
   let preset = "nat";
   let ch = "rgb", before = false, picking = false, busy = false, restoreArmed = false;
+  let duoLast = 2, duoPick = null, duoPresKey = ""; // DuoTone: ultimo modo usato, contagocce attivo (S, M, H)
   let orig = null;             // foto di partenza intera, dritta: {canvas, w, h}
   let base = null;             // foto di partenza ruotata (quarti di giro + raddrizzamento): {canvas, w, h}
   let baseKey = null, workCrop = null;
@@ -108,7 +109,7 @@
     box.innerHTML = "";
     GROUPS.forEach(([title, items]) => {
       const g = document.createElement("div");
-      g.className = "group";
+      g.className = "group"; g.dataset.g = title;
       const h = document.createElement("div");
       h.className = "h"; h.style.marginBottom = "2px"; h.textContent = t(title);
       g.appendChild(h);
@@ -127,6 +128,14 @@
       });
       box.appendChild(g);
     });
+    syncFilterLabels();
+  }
+  // con DuoTone la saturazione sparisce (non avrebbe effetto) e temperatura e tinta diventano filtri colore
+  function syncFilterLabels() {
+    const f = !!P.dt;
+    const g = $('[data-g="g.wb"] .h'); if (g) g.textContent = t(f ? "g.filters" : "g.wb");
+    [["temp", "s.tempF"], ["tint", "s.tintF"]].forEach(([k, kf]) => { const i = $("#s-" + k); if (i) i.parentElement.querySelector("label").textContent = t(f ? kf : "s." + k); });
+    const ss = $("#s-sat"); if (ss) ss.parentElement.hidden = f;
   }
   function syncSliders() {
     GROUPS.forEach(([, items]) => items.forEach(([k]) => {
@@ -139,9 +148,14 @@
     $("#qRow").hidden = !(P.q > 0);
     if (P.q > 0) { $("#qAmt").value = P.q; $("#qOut").textContent = P.q + "%"; }
     syncRotUI();
+    syncFilterLabels();
+    syncDuoUI();
   }
 
   /* ---------- Stili rapidi ---------- */
+  // gli stili cambiano luce e colore: ritaglio, rotazione, qualità e DuoTone restano
+  const KEEP = ["crop", "q", "qn", "rq", "rot", "dt", "dS", "dM", "dH", "dTr", "dA", "dMid"];
+  function keepOnPreset() { const o = {}; KEEP.forEach((k) => { o[k] = P[k]; }); return o; }
   const PRESETS = {
     nat: () => ({}),
     stage: () => ({ con: 25, sat: 12, sh: 25, hl: 15, sharp: 30 }),
@@ -158,7 +172,7 @@
       b.textContent = t("p." + k);
       b.setAttribute("aria-pressed", String(preset === k));
       // lo stile cambia le regolazioni, il ritaglio resta
-      b.addEventListener("click", () => { P = Object.assign(D(), PRESETS[k](), { crop: P.crop, q: P.q, qn: P.qn, rq: P.rq, rot: P.rot }); preset = k; syncSliders(); changed(); commit(); });
+      b.addEventListener("click", () => { P = Object.assign(D(), PRESETS[k](), keepOnPreset()); preset = k; syncSliders(); changed(); commit(); });
       box.appendChild(b);
     });
   }
@@ -186,7 +200,9 @@
     $("#beforeBtn").setAttribute("aria-pressed", String(before));
     $("#pickBtn").setAttribute("aria-pressed", String(picking));
     $("#pickHint").hidden = !picking;
-    $("#preview").classList.toggle("picking", picking);
+    $("#preview").classList.toggle("picking", picking || !!duoPick);
+    $("#duoBtn").setAttribute("aria-pressed", String(!$("#duoPanel").hidden));
+    if (!$("#duoPanel").hidden) syncDuoUI();
     $("#preview").classList.toggle("before", before);
     $$(".pill").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.ch === ch)));
     $("#undoBtn").disabled = busy || hist.i <= 0;
@@ -857,6 +873,107 @@
     });
   }
 
+  /* ---------- DuoTone / TriTone ---------- */
+  const DUO_PRESETS = [
+    ["lago", "#6736dd", "#10c5f8"], ["ambra", "#111111", "#ffcf80"], ["blu", "#000000", "#4f8dff"], ["corallo", "#2b1055", "#ff7a6b"],
+    ["menta", "#0b3d2e", "#a8f0c6"], ["seppia", "#2a1a0e", "#f0d9b5"], ["notte", "#0a1a3a", "#f3f3f3"], ["fucsia", "#1b1b1b", "#ff4fb0"],
+  ];
+  const TRI_PRESETS = [
+    ["tramonto", "#1b0b3a", "#d6336c", "#ffd27a"], ["aurora", "#061a2b", "#1fa58c", "#e9f7a1"], ["neon", "#12002b", "#ff2fb2", "#39e5ff"], ["vintage", "#2a1a0e", "#9c6b45", "#f3e3c3"],
+    ["oceano", "#04102a", "#1b5fa8", "#9fe3ff"], ["pesca", "#3b1f2b", "#e07a5f", "#f6e7cb"], ["lime", "#102010", "#4a8f2c", "#e6ff7a"], ["palco", "#000000", "#4f8dff", "#f3f3f3"],
+  ];
+  const hexOk = (v) => { v = String(v || "").trim(); if (v[0] !== "#") v = "#" + v; if (/^#[0-9a-f]{3}$/i.test(v)) v = "#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]; return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null; };
+  const mixHex = (a, b, f) => "#" + IL.hexRGB(a).map((v, i) => Math.round(v + (IL.hexRGB(b)[i] - v) * f).toString(16).padStart(2, "0")).join("");
+  const duoMode = () => P.dt || duoLast;
+  function setDuo(ch, live) {
+    Object.assign(P, ch);
+    if (P.dt) duoLast = P.dt;
+    syncFilterLabels(); syncDuoUI(); changed();
+    if (!live) commit();
+  }
+  function syncDuoUI() {
+    if (!$("#duoPanel")) return;
+    const m = duoMode(), on = !!P.dt;
+    $("#duoTitle").textContent = m === 3 ? "TriTone" : "DuoTone";
+    const ob = $("#duoOn");
+    ob.textContent = t(on ? "duo.on" : "duo.off"); ob.setAttribute("aria-pressed", String(on)); ob.classList.toggle("primary", on);
+    $("#duoM2").setAttribute("aria-pressed", String(m === 2)); $("#duoM3").setAttribute("aria-pressed", String(m === 3));
+    // stili pronti: si ricostruiscono solo se cambiano modo o lingua
+    const list = m === 3 ? TRI_PRESETS : DUO_PRESETS, key = m + LANG;
+    const box = $("#duoPresets");
+    if (duoPresKey !== key) {
+      duoPresKey = key; box.innerHTML = "";
+      list.forEach((pr) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "sw"; b.dataset.k = pr[0];
+        const i = document.createElement("i"); i.style.background = "linear-gradient(90deg," + pr.slice(1).join(",") + ")";
+        const sp = document.createElement("span"); sp.textContent = t("dp." + pr[0]);
+        b.append(i, sp);
+        b.addEventListener("click", () => setDuo(m === 3 ? { dt: 3, dS: pr[1], dM: pr[2], dH: pr[3] } : { dt: 2, dS: pr[1], dH: pr[2] }));
+        box.appendChild(b);
+      });
+    }
+    list.forEach((pr, j) => {
+      const same = on && P.dS === pr[1] && (m === 3 ? P.dM === pr[2] && P.dH === pr[3] : P.dH === pr[2]);
+      box.children[j].setAttribute("aria-pressed", String(same));
+    });
+    $("#dRowM").hidden = m !== 3; $("#dMidRow").hidden = m !== 3;
+    ["S", "M", "H"].forEach((k) => {
+      const v = P["d" + k], c = $("#dc" + k), h = $("#dh" + k);
+      if (document.activeElement !== c) c.value = v;
+      if (document.activeElement !== h) h.value = v.toUpperCase();
+      $("#dp" + k).setAttribute("aria-pressed", String(duoPick === k));
+      const tr = $("#dTr" + k);
+      if (tr) { tr.checked = P.dTr === k.toLowerCase(); $("#dRow" + k).classList.toggle("transp", tr.checked); }
+    });
+    $("#dAmt").value = P.dA; $("#dAmtOut").textContent = P.dA + "%";
+    $("#dMid").value = P.dMid; $("#dMidOut").textContent = P.dMid + "%";
+    $("#duoTrNote").hidden = !(on && P.dTr);
+    $("#duoPickHint").hidden = !duoPick;
+  }
+  function toggleDuo(open) {
+    const p = $("#duoPanel");
+    p.hidden = open == null ? !p.hidden : !open;
+    if (p.hidden) duoPick = null;
+    else {
+      if (!P.dt) setDuo({ dt: duoLast }); // aprendo il pannello il DuoTone si accende
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+    }
+    syncDuoUI(); updateTexts();
+  }
+  function bindDuo() {
+    $("#duoBtn").addEventListener("click", () => toggleDuo());
+    $("#duoDone").addEventListener("click", () => toggleDuo(false));
+    $("#duoRemove").addEventListener("click", () => { setDuo({ dt: 0 }); toggleDuo(false); });
+    $("#duoOn").addEventListener("click", () => setDuo({ dt: P.dt ? 0 : duoLast }));
+    $("#duoM2").addEventListener("click", () => setDuo({ dt: 2 }));
+    $("#duoM3").addEventListener("click", () => {
+      const ch = { dt: 3 };
+      if (P.dM === IL.defaults().dM) ch.dM = mixHex(P.dS, P.dH, 0.5); // primo TriTone: il colore di mezzo parte tra i due
+      setDuo(ch);
+    });
+    $("#duoSwap").addEventListener("click", () => setDuo({ dS: P.dH, dH: P.dS, dTr: P.dTr === "s" ? "h" : P.dTr === "h" ? "s" : "" }));
+    ["S", "M", "H"].forEach((k) => {
+      const c = $("#dc" + k), h = $("#dh" + k);
+      c.addEventListener("input", () => setDuo({ ["d" + k]: c.value.toLowerCase(), dt: P.dt || duoLast }, true));
+      c.addEventListener("change", commit);
+      h.addEventListener("change", () => { const v = hexOk(h.value); if (v) setDuo({ ["d" + k]: v, dt: P.dt || duoLast }); else h.value = P["d" + k].toUpperCase(); });
+      h.addEventListener("keydown", (e) => { if (e.key === "Enter") h.blur(); });
+      $("#dp" + k).addEventListener("click", () => {
+        if (cropMode) return;
+        duoPick = duoPick === k ? null : k; picking = false;
+        updateTexts(); syncDuoUI();
+      });
+      const tr = $("#dTr" + k);
+      if (tr) tr.addEventListener("change", () => setDuo({ dTr: tr.checked ? k.toLowerCase() : "", dt: P.dt || duoLast }));
+    });
+    const a = $("#dAmt"), md = $("#dMid");
+    a.addEventListener("input", () => setDuo({ dA: +a.value }, true)); a.addEventListener("change", commit);
+    a.addEventListener("dblclick", () => setDuo({ dA: 100 }));
+    md.addEventListener("input", () => setDuo({ dMid: +md.value }, true)); md.addEventListener("change", commit);
+    md.addEventListener("dblclick", () => setDuo({ dMid: 50 }));
+  }
+
   /* ---------- Caricamento immagine ---------- */
   async function useImage(img) {
     let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
@@ -1246,7 +1363,7 @@
 
   /* ---------- Punto neutro ---------- */
   function pickAt(ev) {
-    if (!picking || !full || !vt || cropMode) return;
+    if ((!picking && !duoPick) || !full || !vt || cropMode) return;
     const r = $("#pv").getBoundingClientRect();
     const fx = vt.x0 + (ev.clientX - r.left) / vt.s, fy = vt.y0 + (ev.clientY - r.top) / vt.s;
     if (fx < 0 || fy < 0 || fx >= full.w || fy >= full.h) return; // clic nelle bande vuote
@@ -1257,6 +1374,14 @@
       const xx = clamp(x + dx, 0, full.w - 1), yy = clamp(y + dy, 0, full.h - 1);
       const i = (yy * full.w + xx) * 4;
       R += full.data[i]; G += full.data[i + 1]; B += full.data[i + 2]; n++;
+    }
+    if (duoPick) {
+      // il colore si prende dalla foto originale, prima del DuoTone
+      const hx = "#" + [R, G, B].map((v) => Math.round(v / n).toString(16).padStart(2, "0")).join("");
+      const k = duoPick; duoPick = null;
+      setDuo({ ["d" + k]: hx });
+      toast(t("duo.picked"));
+      return;
     }
     const nt = IL.neutralFrom(R / n, G / n, B / n);
     P.temp = nt.temp; P.tint = nt.tint; preset = "custom";
@@ -1275,6 +1400,7 @@
     bindZoom();
     bindCrop();
     bindRot();
+    bindDuo();
     $("#qBtn").addEventListener("click", () => {
       if (!full) return;
       if (P.q > 0) { P.q = 0; }
@@ -1286,7 +1412,7 @@
     $("#qAmt").addEventListener("dblclick", () => { P.q = 60; syncSliders(); changed(); commit(); });
     $("#autoLv").addEventListener("click", () => { if (!srcHist) return; Object.assign(P, IL.autoLevels(srcHist)); preset = "custom"; syncSliders(); changed(); commit(); });
     $("#resetLv").addEventListener("click", () => { P.b = 0; P.w = 255; P.p = 0.5; syncSliders(); changed(); commit(); });
-    $("#pickBtn").addEventListener("click", () => { if (cropMode) return; picking = !picking; updateTexts(); });
+    $("#pickBtn").addEventListener("click", () => { if (cropMode) return; picking = !picking; duoPick = null; updateTexts(); });
     $("#pv").addEventListener("click", pickAt);
     $("#beforeBtn").addEventListener("click", () => { before = !before; updateTexts(); render(); });
     // Azzera: tutto come all'inizio, ritaglio compreso

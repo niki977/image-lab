@@ -3,7 +3,8 @@
 Add-in per PowerPoint che regola le foto delle slide, come «Regola immagine» di Keynote:
 istogramma con livelli (nero 0%, mezzitoni 50%, bianco 100%), esposizione, contrasto, saturazione,
 luci, ombre, nitidezza, riduzione rumore, temperatura e tinta, stili rapidi e punto neutro,
-migliora qualità, ritaglio, rotazione (90°, 180° e raddrizzamento fino a ±45°), zoom, annulla/ripeti.
+migliora qualità, ritaglio, rotazione (90°, 180° e raddrizzamento fino a ±45°), DuoTone/TriTone
+(con colori presi dalla foto e ombre o luci trasparenti), zoom, annulla/ripeti.
 Interfaccia in italiano, inglese, spagnolo, francese e tedesco.
 
 ## Come funziona nella slide

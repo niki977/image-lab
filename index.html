@@ -99,6 +99,35 @@ body.web .preview{max-height:46vh}
 .arrows button svg{width:10px;height:7px;fill:none;stroke:currentColor;stroke-width:1.8}
 .arrows button:active{background:#ffffff;color:#000000}
 @media (pointer:coarse){.arrows button{width:34px;height:20px}}
+/* DuoTone / TriTone */
+.duohead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ghost.sm{height:28px;padding:0 10px;font-size:12.5px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border:1px solid #333333;border-radius:8px;overflow:hidden}
+.seg button{height:32px;border:0;background:transparent;font-size:13px;font-weight:700;letter-spacing:.02em;color:var(--ink-2)}
+.seg button+button{border-left:1px solid #333333}
+.seg button[aria-pressed="true"]{background:#ffffff;color:#000000}
+.dpre{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 8px}
+.sw{display:flex;flex-direction:column;gap:5px;padding:0;border:0;background:transparent;font-size:12px;font-weight:600;color:var(--ink-2);text-align:left;min-width:0}
+.sw i{display:block;height:28px;border-radius:7px;border:1px solid #333333}
+.sw span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sw[aria-pressed="true"]{color:#ffffff}
+.sw[aria-pressed="true"] i{outline:2px solid #ffffff;outline-offset:2px}
+.dcols{display:flex;flex-direction:column;gap:10px}
+.dcol{display:flex;flex-direction:column;gap:6px}
+.dlab{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13.5px;font-weight:600;color:#e6e6e6}
+.tchk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.tchk input{width:16px;height:16px;margin:0;accent-color:#ffffff}
+.dctl{display:grid;grid-template-columns:40px minmax(0,1fr) 34px;gap:6px;align-items:center}
+.croppanel .cpick{width:40px;height:32px;padding:3px;border:1px solid #333333;border-radius:7px;background:#111111;cursor:pointer}
+.cpick::-webkit-color-swatch-wrapper{padding:0}
+.cpick::-webkit-color-swatch{border:0;border-radius:4px}
+.cpick::-moz-color-swatch{border:0;border-radius:4px}
+.croppanel .hex{letter-spacing:.06em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+.ib{width:34px;height:32px;border-radius:7px;border:1px solid #333333;background:transparent;display:flex;align-items:center;justify-content:center;padding:0}
+.ib svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+.ib[aria-pressed="true"]{background:#ffffff;color:#000000;border-color:#ffffff}
+.dcol.transp .dctl{opacity:.35;pointer-events:none}
+.dswap{display:flex;justify-content:center}
 /* Ritaglio */
 .cropbox{position:absolute;border:1.5px solid #ffffff;box-shadow:0 0 0 9999px rgba(0,0,0,.58);cursor:move;touch-action:none;
   background-image:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
@@ -254,11 +283,60 @@ body.web .preview{max-height:46vh}
         <button type="button" class="tb" id="redoBtn" data-i18n-aria="redo" data-i18n-title="redo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
         <button type="button" class="tb" id="cropBtn" aria-pressed="false" data-i18n-title="crop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg><span data-i18n="crop"></span></button>
         <button type="button" class="tb" id="rotBtn" aria-pressed="false" aria-controls="rotPanel" data-i18n-title="rotate"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg><span data-i18n="rotate"></span></button>
+        <button type="button" class="tb" id="duoBtn" aria-pressed="false" aria-controls="duoPanel" data-i18n-title="duo"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg><span data-i18n="duo"></span></button>
         <span class="zhint" id="zoomHint"></span>
         <button type="button" class="tb lbl" id="zoomLbl" data-i18n-title="fitTitle"></button>
       </div>
     </div>
 
+    <section class="croppanel" id="duoPanel" hidden>
+      <div class="duohead">
+        <div class="h" id="duoTitle"></div>
+        <button type="button" class="ghost sm" id="duoOn" aria-pressed="false"></button>
+      </div>
+      <div class="seg" role="group" data-i18n-aria="duo">
+        <button type="button" id="duoM2" aria-pressed="true">DuoTone</button>
+        <button type="button" id="duoM3" aria-pressed="false">TriTone</button>
+      </div>
+      <div class="dpre" id="duoPresets"></div>
+      <div class="dcols">
+        <div class="dcol" id="dRowS">
+          <div class="dlab"><span id="dLabS" data-i18n="duo.shadows"></span><label class="tchk"><input type="checkbox" id="dTrS"><span data-i18n="duo.transparent"></span></label></div>
+          <div class="dctl">
+            <input type="color" class="cpick" id="dcS" data-i18n-aria="duo.shadows">
+            <input type="text" class="hex" id="dhS" maxlength="7" spellcheck="false" autocomplete="off" data-i18n-aria="duo.shadows">
+            <button type="button" class="ib" id="dpS" data-i18n-aria="duo.pick" data-i18n-title="duo.pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M17 7l-9.5 9.5L4 20l3.5-3.5L17 7z"/></svg></button>
+          </div>
+        </div>
+        <div class="dcol" id="dRowM">
+          <div class="dlab"><span id="dLabM" data-i18n="duo.mids"></span></div>
+          <div class="dctl">
+            <input type="color" class="cpick" id="dcM" data-i18n-aria="duo.mids">
+            <input type="text" class="hex" id="dhM" maxlength="7" spellcheck="false" autocomplete="off" data-i18n-aria="duo.mids">
+            <button type="button" class="ib" id="dpM" data-i18n-aria="duo.pick" data-i18n-title="duo.pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M17 7l-9.5 9.5L4 20l3.5-3.5L17 7z"/></svg></button>
+          </div>
+        </div>
+        <div class="dswap"><button type="button" class="ghost sm" id="duoSwap"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg><span data-i18n="duo.swap"></span></button></div>
+        <div class="dcol" id="dRowH">
+          <div class="dlab"><span id="dLabH" data-i18n="duo.lights"></span><label class="tchk"><input type="checkbox" id="dTrH"><span data-i18n="duo.transparent"></span></label></div>
+          <div class="dctl">
+            <input type="color" class="cpick" id="dcH" data-i18n-aria="duo.lights">
+            <input type="text" class="hex" id="dhH" maxlength="7" spellcheck="false" autocomplete="off" data-i18n-aria="duo.lights">
+            <button type="button" class="ib" id="dpH" data-i18n-aria="duo.pick" data-i18n-title="duo.pick"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M17 7l-9.5 9.5L4 20l3.5-3.5L17 7z"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <div class="srow" id="dMidRow"><label for="dMid" data-i18n="duo.mid"></label><input id="dMid" class="sl" type="range" min="5" max="95" step="1"><output for="dMid" id="dMidOut"></output></div>
+      <div class="srow"><label for="dAmt" data-i18n="duo.amount"></label><input id="dAmt" class="sl" type="range" min="0" max="100" step="1"><output for="dAmt" id="dAmtOut"></output></div>
+      <div class="hint" id="duoPickHint" data-i18n="duo.pickHint" hidden></div>
+      <p class="note" data-i18n="duo.note" style="margin:0"></p>
+      <p class="warnline" id="duoTrNote" data-i18n="duo.trNote" hidden></p>
+      <div class="row" style="flex-wrap:wrap">
+        <button type="button" class="ghost" id="duoRemove" data-i18n="duo.remove"></button>
+        <span style="flex:1"></span>
+        <button type="button" class="ghost primary" id="duoDone" data-i18n="rot.done"></button>
+      </div>
+    </section>
     <section class="croppanel" id="rotPanel" hidden>
       <div class="h" data-i18n="rot.title"></div>
       <div class="chips">

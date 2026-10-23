@@ -3,10 +3,34 @@
   "use strict";
 
   // q: "Migliora qualità" (0 = spenta, 1–100 = intensità); qn: rumore stimato della foto (0–100), misurato al clic
-  const DEFAULTS = { exp: 0, con: 0, sat: 0, hl: 0, sh: 0, sharp: 0, nr: 0, temp: 0, tint: 0, b: 0, w: 255, p: 0.5, q: 0, qn: 0 };
+  // dt: DuoTone/TriTone (0 = spento, 2 = due colori, 3 = tre colori); dS, dM, dH: ombre, mezzitoni, luci;
+  // dTr: "s" o "h" = ombre o luci trasparenti; dA: intensità 0–100; dMid: posizione dei mezzitoni 5–95
+  const DEFAULTS = { exp: 0, con: 0, sat: 0, hl: 0, sh: 0, sharp: 0, nr: 0, temp: 0, tint: 0, b: 0, w: 255, p: 0.5, q: 0, qn: 0,
+    dt: 0, dS: "#6736dd", dM: "#3b7fea", dH: "#10c5f8", dTr: "", dA: 100, dMid: 50 };
 
   function defaults() { return Object.assign({}, DEFAULTS); }
-  function isNeutral(p) { for (const k in DEFAULTS) if (Math.abs((p[k] ?? DEFAULTS[k]) - DEFAULTS[k]) > 1e-6) return false; return true; }
+  function isNeutral(p) {
+    for (const k in DEFAULTS) { if (typeof DEFAULTS[k] !== "number") continue; if (Math.abs((p[k] ?? DEFAULTS[k]) - DEFAULTS[k]) > 1e-6) return false; }
+    return true;
+  }
+  function hexRGB(h) { const m = /^#?([0-9a-f]{6})$/i.exec(String(h || "").trim()); const n = m ? parseInt(m[1], 16) : 0; return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+
+  // DuoTone / TriTone: dalla luminosità (0–1) al colore, in 1025 passi RGBA (0–255)
+  function duoLUT(p) {
+    const N = 1024, lut = new Float32Array((N + 1) * 4), tri = p.dt === 3;
+    let S = hexRGB(p.dS).concat(255), M = tri ? hexRGB(p.dM).concat(255) : null, H = hexRGB(p.dH).concat(255);
+    // la parte trasparente prende il colore vicino, così il bordo sfuma senza aloni scuri o chiari
+    if (p.dTr === "s") S = (tri ? M : H).slice(0, 3).concat(0);
+    else if (p.dTr === "h") H = (tri ? M : S).slice(0, 3).concat(0);
+    const mid = Math.min(0.95, Math.max(0.05, (p.dMid ?? 50) / 100));
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      let a = S, b = H, f = t;
+      if (tri) { if (t < mid) { b = M; f = t / mid; } else { a = M; f = (t - mid) / (1 - mid); } }
+      for (let c = 0; c < 4; c++) lut[i * 4 + c] = a[c] + (b[c] - a[c]) * f;
+    }
+    return lut;
+  }
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
   // Gamma dei mezzitoni: il cursore centrale in posizione relativa p (0–1) tra nero e bianco. p = 0,5 → gamma 1
@@ -32,7 +56,14 @@
     const E = Math.pow(2, (p.exp / 100) * 1.5);
     const C = p.con >= 0 ? 1 + p.con / 100 : 1 + (p.con / 100) * 0.8;
     const t = p.temp / 100, m = p.tint / 100;
-    const k = [1 + 0.22 * t, 1 - 0.18 * m, 1 - 0.22 * t];
+    let k = [1 + 0.22 * t, 1 - 0.18 * m, 1 - 0.22 * t];
+    if (p.dt) {
+      // con DuoTone temperatura e tinta diventano filtri colore, come in bianco e nero:
+      // spostano la luminosità tra i colori, mentre i grigi restano come sono
+      k = [(1 + 0.6 * t) * (1 + 0.3 * m), (1 + 0.1 * t) * (1 - 0.55 * m), (1 - 0.6 * t) * (1 + 0.3 * m)];
+      const lk = 0.2126 * k[0] + 0.7152 * k[1] + 0.0722 * k[2];
+      k = k.map((v) => Math.max(0.05, v / lk));
+    }
     const luts = [0, 1, 2].map((c) => {
       const a = new Float32Array(256);
       for (let v = 0; v < 256; v++) a[v] = ((v / 255) * k[c] * E - 0.5) * C + 0.5;
@@ -81,7 +112,8 @@
     p = Object.assign(defaults(), p);
     ref = ref || Math.min(w, h);
     const lin = linLUT(p), tone = toneLUT(p), N = tone.length - 1;
-    const S = 1 + p.sat / 100;
+    const S = p.dt ? 1 : 1 + p.sat / 100; // con DuoTone la saturazione non avrebbe effetto
+    const duo = p.dt ? duoLUT(p) : null, dA = duo ? Math.min(1, Math.max(0, (p.dA ?? 100) / 100)) : 0;
     const nrA = (p.nr / 100) * 0.85, shA = (p.sharp / 100) * 1.6;
     // "Migliora qualità": riduzione del rumore che rispetta i contorni, nitidezza solo sui dettagli veri, contrasto locale
     const qa = p.q / 100;
@@ -138,10 +170,19 @@
         x = l + (x - l) * S; y = l + (y - l) * S; z = l + (z - l) * S;
       }
       x = x < 0 ? 0 : x > 1 ? 1 : x; y = y < 0 ? 0 : y > 1 ? 1 : y; z = z < 0 ? 0 : z > 1 ? 1 : z;
-      out[i] = tone[(x * N + 0.5) | 0] * 255 + 0.5;
-      out[i + 1] = tone[(y * N + 0.5) | 0] * 255 + 0.5;
-      out[i + 2] = tone[(z * N + 0.5) | 0] * 255 + 0.5;
-      out[i + 3] = src[i + 3];
+      const R = tone[(x * N + 0.5) | 0] * 255, G = tone[(y * N + 0.5) | 0] * 255, B = tone[(z * N + 0.5) | 0] * 255;
+      if (duo) {
+        const L = (0.2126 * R + 0.7152 * G + 0.0722 * B) / 255;
+        const k = ((L < 0 ? 0 : L > 1 ? 1 : L) * N + 0.5 | 0) * 4;
+        const dn = (Math.imul(q + 1, 2654435761) >>> 24) / 256 - 0.5; // un filo di rumore contro le bande nei passaggi lisci
+        out[i] = R + (duo[k] - R) * dA + dn;
+        out[i + 1] = G + (duo[k + 1] - G) * dA + dn;
+        out[i + 2] = B + (duo[k + 2] - B) * dA + dn;
+        out[i + 3] = src[i + 3] * (1 - dA * (1 - duo[k + 3] / 255)) + 0.5;
+      } else {
+        out[i] = R + 0.5; out[i + 1] = G + 0.5; out[i + 2] = B + 0.5;
+        out[i + 3] = src[i + 3];
+      }
     }
     return out;
   }
@@ -198,7 +239,7 @@
     return Math.max(0, Math.min(100, Math.round(sigma * 8)));
   }
 
-  const api = { defaults, isNeutral, gamma, toneLUT, linLUT, blur, process, histogram, autoLevels, neutralFrom, estimateNoise };
+  const api = { defaults, isNeutral, hexRGB, duoLUT, gamma, toneLUT, linLUT, blur, process, histogram, autoLevels, neutralFrom, estimateNoise };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.IL = api;
 })(typeof self !== "undefined" ? self : this);
