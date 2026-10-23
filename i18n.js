@@ -4,6 +4,7 @@ window.IL_I18N = {
 
   it: {
     "duo": "DuoTone",
+    "duo.tool": "Duo & Tri Tone",
     "duo.on": "Attivo",
     "duo.off": "Spento",
     "duo.shadows": "Ombre",
@@ -152,6 +153,7 @@ window.IL_I18N = {
 
   en: {
     "duo": "DuoTone",
+    "duo.tool": "Duo & Tri Tone",
     "duo.on": "On",
     "duo.off": "Off",
     "duo.shadows": "Shadows",
@@ -300,6 +302,7 @@ window.IL_I18N = {
 
   es: {
     "duo": "DuoTone",
+    "duo.tool": "Duo & Tri Tone",
     "duo.on": "Activado",
     "duo.off": "Desactivado",
     "duo.shadows": "Sombras",
@@ -448,6 +451,7 @@ window.IL_I18N = {
 
   fr: {
     "duo": "DuoTone",
+    "duo.tool": "Duo & Tri Tone",
     "duo.on": "Activé",
     "duo.off": "Désactivé",
     "duo.shadows": "Ombres",
@@ -596,6 +600,7 @@ window.IL_I18N = {
 
   de: {
     "duo": "DuoTone",
+    "duo.tool": "Duo & Tri Tone",
     "duo.on": "An",
     "duo.off": "Aus",
     "duo.shadows": "Tiefen",
