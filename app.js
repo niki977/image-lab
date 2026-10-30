@@ -6,10 +6,9 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-  const store = {
-    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* archiviazione non disponibile */ } },
-  };
+  // la lingua scelta resta salvata nel browser o in PowerPoint (se l'archiviazione non c'è, si ignora)
+  const savedLang = () => { try { return JSON.parse(localStorage.getItem("imagelab.lang")); } catch (e) { return null; } };
+  const saveLang = (l) => { try { localStorage.setItem("imagelab.lang", JSON.stringify(l)); } catch (e) { /* ignora */ } };
   let toastT;
   function toast(msg) {
     const el = $("#toast"); el.textContent = msg; el.classList.add("show");
@@ -21,6 +20,8 @@
   const isMobile = () => mq("(pointer: coarse)") && typeof navigator.share === "function";
   // Solo touch (nessun mouse o trackpad): lo zoom si fa con le dita
   const touchOnly = () => mq("(hover: none) and (pointer: coarse)");
+  // i pannelli stanno subito sotto l'anteprima fissa: aprendoli si torna in cima per vederli
+  const toTop = () => { try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); } };
   function canvas(w, h) { const c = document.createElement("canvas"); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; }
 
   /* ---------- Lingua ---------- */
@@ -33,8 +34,8 @@
     return v;
   };
   function detectLang() {
-    const saved = store.get("imagelab.lang", null);
-    if (saved && LANGS.includes(saved)) return saved;
+    const saved = savedLang();
+    if (LANGS.includes(saved)) return saved;
     let l = "";
     try { if (inOffice && Office.context && Office.context.displayLanguage) l = Office.context.displayLanguage; } catch (e) { /* ignora */ }
     if (!l) l = (navigator.languages && navigator.languages[0]) || navigator.language || "it";
@@ -55,7 +56,12 @@
   }
 
   /* ---------- Stato ---------- */
-  const D = () => Object.assign(IL.defaults(), { crop: null, rq: 0, rot: 0 }); // regolazioni di partenza (con ritaglio)
+  /* Tutte le regolazioni stanno in un solo oggetto P, salvato anche nella slide.
+     q, qn: "Migliora qualità" (intensità, rumore stimato); crop: ritaglio normalizzato; rq, rot: quarti di giro e angolo fine;
+     dt: DuoTone (0 spento, 2 o 3 colori); dS, dM, dH: ombre, mezzitoni, luci; dTr: "s" o "h" trasparenti; dA: intensità; dMid: mezzitoni */
+  const DEFAULTS = { exp: 0, con: 0, sat: 0, hl: 0, sh: 0, sharp: 0, nr: 0, temp: 0, tint: 0, b: 0, w: 255, p: 0.5, q: 0, qn: 0,
+    crop: null, rq: 0, rot: 0, dt: 0, dS: "#6736dd", dM: "#3b7fea", dH: "#10c5f8", dTr: "", dA: 100, dMid: 50 };
+  const D = () => Object.assign({}, DEFAULTS);
   const snap = (p) => JSON.stringify(Object.assign(D(), p));
   let inOffice = false;
   let mode = "boot";           // demo | office | unsupported
@@ -70,7 +76,7 @@
   let full = null, prev = null;// zona di lavoro (ritagliata): {data, w, h} a piena risoluzione e ridotta
   let fullCanvas = null, prevCanvas = null, prevSrcCanvas = null;
   let prevOut = null, prevHist = null, srcHist = null, workKey = null;
-  const cachePrev = {}, cacheFull = {};
+  const cachePrev = {};        // sfocature riusate mentre si muovono i cursori
   let shape = null;            // {id, slideId, origId, edited}
 
   /* ---------- Annulla / Ripeti ---------- */
@@ -101,8 +107,7 @@
     ["g.tone", [["hl", 0, 100, ""], ["sh", 0, 100, ""], ["sharp", 0, 100, ""], ["nr", 0, 100, ""]]],
     ["g.wb", [["temp", -100, 100, "temp"], ["tint", -100, 100, "tint"]]],
   ];
-  const BIPOLAR = { exp: 1, con: 1, sat: 1, temp: 1, tint: 1 };
-  const fmt = (k, v) => (BIPOLAR[k] && v > 0 ? "+" : "") + v + "%";
+  const fmt = (min, v) => (min < 0 && v > 0 ? "+" : "") + v + "%";
 
   function buildSliders() {
     const box = $("#sliders");
@@ -120,10 +125,11 @@
         row.querySelector("label").textContent = t("s." + k);
         const inp = row.querySelector("input");
         inp.value = P[k];
-        row.querySelector("output").textContent = fmt(k, P[k]);
-        inp.addEventListener("input", () => { P[k] = +inp.value; preset = "custom"; row.querySelector("output").textContent = fmt(k, P[k]); changed(); });
+        const out = row.querySelector("output");
+        out.textContent = fmt(min, P[k]);
+        inp.addEventListener("input", () => { P[k] = +inp.value; preset = "custom"; out.textContent = fmt(min, P[k]); changed(); });
         inp.addEventListener("change", commit);
-        inp.addEventListener("dblclick", () => { P[k] = 0; inp.value = 0; preset = "custom"; row.querySelector("output").textContent = fmt(k, 0); changed(); commit(); });
+        inp.addEventListener("dblclick", () => { P[k] = 0; inp.value = 0; preset = "custom"; out.textContent = fmt(min, 0); changed(); commit(); });
         g.appendChild(row);
       });
       box.appendChild(g);
@@ -133,14 +139,15 @@
   // con DuoTone la saturazione sparisce (non avrebbe effetto) e temperatura e tinta diventano filtri colore
   function syncFilterLabels() {
     const f = !!P.dt;
-    const g = $('[data-g="g.wb"] .h'); if (g) g.textContent = t(f ? "g.filters" : "g.wb");
-    [["temp", "s.tempF"], ["tint", "s.tintF"]].forEach(([k, kf]) => { const i = $("#s-" + k); if (i) i.parentElement.querySelector("label").textContent = t(f ? kf : "s." + k); });
-    const ss = $("#s-sat"); if (ss) ss.parentElement.hidden = f;
+    $('[data-g="g.wb"] .h').textContent = t(f ? "g.filters" : "g.wb");
+    $('label[for="s-temp"]').textContent = t(f ? "s.tempF" : "s.temp");
+    $('label[for="s-tint"]').textContent = t(f ? "s.tintF" : "s.tint");
+    $("#s-sat").parentElement.hidden = f;
   }
   function syncSliders() {
-    GROUPS.forEach(([, items]) => items.forEach(([k]) => {
-      const inp = $("#s-" + k); if (!inp) return;
-      inp.value = P[k]; inp.parentElement.querySelector("output").textContent = fmt(k, P[k]);
+    GROUPS.forEach(([, items]) => items.forEach(([k, min]) => {
+      const inp = $("#s-" + k);
+      inp.value = P[k]; inp.parentElement.querySelector("output").textContent = fmt(min, P[k]);
     }));
     $("#lvB").value = P.b; $("#lvW").value = P.w; $("#lvM").value = Math.round(P.b + P.p * (P.w - P.b));
     // Migliora qualità
@@ -283,7 +290,6 @@
     prev = { data: px.getImageData(0, 0, pw, ph).data, w: pw, h: ph };
     prevOut = new ImageData(pw, ph);
     prevCanvas = canvas(pw, ph);
-    delete cachePrev.blur; delete cacheFull.blur; cachePrev.src = cacheFull.src = null;
     srcHist = IL.histogram(prev.data);
     // il riquadro segue la forma della foto fino a 21:9; oltre, la foto resta intera con bande sopra e sotto
     $("#preview").style.setProperty("--ar", String(Math.min(r.w / r.h, 21 / 9)));
@@ -367,7 +373,7 @@
         if (!before) {
           const id = tx.getImageData(0, 0, tw, th);
           const out = new ImageData(tw, th);
-          IL.process(id.data, tw, th, P, out.data, {}, Math.min(full.w, full.h) * (tw / iw));
+          IL.process(id.data, tw, th, P, out.data, undefined, Math.min(full.w, full.h) * (tw / iw));
           tx.putImageData(out, 0, 0);
         }
         ctx.imageSmoothingEnabled = dev < 3; // oltre 3×: pixel netti per vedere i dettagli
@@ -491,7 +497,6 @@
     pv.addEventListener("touchend", (e) => { if (e.touches.length < 2) pinch = null; });
     pv.addEventListener("touchcancel", () => { pinch = null; });
 
-    if (window.ResizeObserver) new ResizeObserver(() => { frameLock = false; requestDraw(); }).observe(pv);
   }
 
   function smoothBins(a) {
@@ -582,59 +587,58 @@
   }
 
   /* ---------- Ritaglio ---------- */
-  const SOCIAL = [
-    ["ig-post", () => "Instagram · post", 1080, 1080],
-    ["ig-portrait", () => "Instagram · " + t("f.portrait"), 1080, 1350],
-    ["ig-story", () => "Instagram / Facebook · " + t("f.story"), 1080, 1920],
-    ["fb-post", () => "Facebook · post", 1200, 630],
-    ["fb-cover", () => "Facebook · " + t("f.cover"), 851, 315],
-    ["li-post", () => "LinkedIn · post", 1200, 627],
-    ["li-cover", () => "LinkedIn · " + t("f.cover"), 1584, 396],
-    ["x-post", () => "X · post", 1600, 900],
-    ["x-header", () => "X · " + t("f.header"), 1500, 500],
-    ["yt-thumb", () => "YouTube · " + t("f.thumb"), 1280, 720],
-    ["pin", () => "Pinterest · pin", 1000, 1500],
-    ["wa-status", () => "WhatsApp · " + t("f.status"), 1080, 1920],
-  ];
-  const SLIDES = [
-    ["slide-169", () => t("f.slide") + " 16:9", 1920, 1080],
-    ["slide-43", () => t("f.slide") + " 4:3", 1440, 1080],
-    ["slide-31", () => t("f.slide") + " 3:1", 1920, 640],
-  ];
-  const PRINT = [ // centimetri a 300 dpi
-    ["p-10x15", () => t("f.photo") + " 10 × 15 cm", 10, 15],
-    ["p-13x18", () => t("f.photo") + " 13 × 18 cm", 13, 18],
-    ["p-20x30", () => t("f.photo") + " 20 × 30 cm", 20, 30],
-    ["p-a4", () => "A4 21 × 29,7 cm", 21, 29.7],
+  // Formati con misura d'uscita: [id, etichetta, larghezza px, altezza px]. Le stampe sono a 300 dpi e nel menu mostrano i centimetri
+  const cm2px = (cm, dpi) => Math.max(1, Math.round((cm / 2.54) * dpi));
+  const FORMATS = [
+    ["crop.g.social", true, [
+      ["ig-post", () => "Instagram · post", 1080, 1080],
+      ["ig-portrait", () => "Instagram · " + t("f.portrait"), 1080, 1350],
+      ["ig-story", () => "Instagram / Facebook · " + t("f.story"), 1080, 1920],
+      ["fb-post", () => "Facebook · post", 1200, 630],
+      ["fb-cover", () => "Facebook · " + t("f.cover"), 851, 315],
+      ["li-post", () => "LinkedIn · post", 1200, 627],
+      ["li-cover", () => "LinkedIn · " + t("f.cover"), 1584, 396],
+      ["x-post", () => "X · post", 1600, 900],
+      ["x-header", () => "X · " + t("f.header"), 1500, 500],
+      ["yt-thumb", () => "YouTube · " + t("f.thumb"), 1280, 720],
+      ["pin", () => "Pinterest · pin", 1000, 1500],
+      ["wa-status", () => "WhatsApp · " + t("f.status"), 1080, 1920],
+    ]],
+    ["crop.g.slides", true, [
+      ["slide-169", () => t("f.slide") + " 16:9", 1920, 1080],
+      ["slide-43", () => t("f.slide") + " 4:3", 1440, 1080],
+      ["slide-31", () => t("f.slide") + " 3:1", 1920, 640],
+    ]],
+    ["crop.g.print", false, [
+      ["p-10x15", () => t("f.photo") + " 10 × 15 cm", cm2px(10, 300), cm2px(15, 300)],
+      ["p-13x18", () => t("f.photo") + " 13 × 18 cm", cm2px(13, 300), cm2px(18, 300)],
+      ["p-20x30", () => t("f.photo") + " 20 × 30 cm", cm2px(20, 300), cm2px(30, 300)],
+      ["p-a4", () => "A4 21 × 29,7 cm", cm2px(21, 300), cm2px(29.7, 300)],
+    ]],
   ];
   const RATIOS = [["1:1", 1, 1], ["4:5", 4, 5], ["3:2", 3, 2], ["2:3", 2, 3], ["4:3", 4, 3], ["3:4", 3, 4], ["16:9", 16, 9], ["9:16", 9, 16], ["21:9", 21, 9]];
-  const cm2px = (cm, dpi) => Math.max(1, Math.round((cm / 2.54) * dpi));
   function fmtInfo(id) {
-    // {ratio: w/h o null, out: {w,h} o null}
-    if (id === "free") return { ratio: null, out: null };
+    // {ratio: larghezza/altezza o null, out: misura d'uscita {w, h} o null}
     if (id === "orig") return { ratio: base.w / base.h, out: null };
     const r = RATIOS.find((x) => x[0] === id); if (r) return { ratio: r[1] / r[2], out: null };
-    const s = SOCIAL.concat(SLIDES).find((x) => x[0] === id); if (s) return { ratio: s[2] / s[3], out: { w: s[2], h: s[3] } };
-    const p = PRINT.find((x) => x[0] === id); if (p) { const w = cm2px(p[2], 300), h = cm2px(p[3], 300); return { ratio: w / h, out: { w, h } }; }
+    const f = FORMATS.flatMap((g) => g[2]).find((x) => x[0] === id); if (f) return { ratio: f[2] / f[3], out: { w: f[2], h: f[3] } };
     if (id === "custom") {
       const w = +$("#cW").value || 1, h = +$("#cH").value || 1, cm = $("#cU").value === "cm", dpi = clamp(+$("#cDpi").value || 300, 72, 1200);
-      const ow = cm ? cm2px(w, dpi) : Math.round(w), oh = cm ? cm2px(h, dpi) : Math.round(h);
-      return { ratio: ow / oh, out: { w: Math.max(1, ow), h: Math.max(1, oh) } };
+      const ow = cm ? cm2px(w, dpi) : Math.max(1, Math.round(w)), oh = cm ? cm2px(h, dpi) : Math.max(1, Math.round(h));
+      return { ratio: ow / oh, out: { w: ow, h: oh } };
     }
-    return { ratio: null, out: null };
+    return { ratio: null, out: null }; // libero
   }
   function buildFormats() {
-    const sel = $("#cropFmt"); if (!sel) return;
+    const sel = $("#cropFmt");
     const cur = sel.value || (draft && draft.id) || "free";
-    const opt = (v, l) => `<option value="${v}">${l}</option>`;
     const esc = (x) => String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;");
-    const sz = (w, h) => w + " × " + h;
+    const opt = (v, l) => `<option value="${v}">${esc(l)}</option>`;
+    const group = (key, inner) => `<optgroup label="${esc(t(key))}">${inner}</optgroup>`;
     sel.innerHTML =
-      `<optgroup label="${esc(t("crop.g.ratio"))}">` + opt("free", esc(t("crop.free"))) + opt("orig", esc(t("crop.original"))) + RATIOS.map((r) => opt(r[0], r[0])).join("") + "</optgroup>" +
-      `<optgroup label="${esc(t("crop.g.social"))}">` + SOCIAL.map((s) => opt(s[0], esc(s[1]()) + " — " + sz(s[2], s[3]))).join("") + "</optgroup>" +
-      `<optgroup label="${esc(t("crop.g.slides"))}">` + SLIDES.map((s) => opt(s[0], esc(s[1]()) + " — " + sz(s[2], s[3]))).join("") + "</optgroup>" +
-      `<optgroup label="${esc(t("crop.g.print"))}">` + PRINT.map((s) => opt(s[0], esc(s[1]()))).join("") + "</optgroup>" +
-      `<optgroup label="${esc(t("crop.g.custom"))}">` + opt("custom", esc(t("crop.custom"))) + "</optgroup>";
+      group("crop.g.ratio", opt("free", t("crop.free")) + opt("orig", t("crop.original")) + RATIOS.map((r) => opt(r[0], r[0])).join("")) +
+      FORMATS.map(([key, showPx, list]) => group(key, list.map((f) => opt(f[0], f[1]() + (showPx ? " — " + f[2] + " × " + f[3] : ""))).join(""))).join("") +
+      group("crop.g.custom", opt("custom", t("crop.custom")));
     sel.value = cur;
   }
 
@@ -674,8 +678,7 @@
     $("#cropRemove").hidden = !P.crop;
     syncCustomUI();
     updateTexts(); render(); updateCropInfo();
-    // il pannello del ritaglio sta subito sotto l'anteprima: si torna in cima per vederlo
-    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+    toTop();
   }
   function exitCrop(applyIt) {
     if (!cropMode) return;
@@ -689,11 +692,11 @@
         unit: d.id === "custom" ? $("#cU").value : undefined, dpi: d.id === "custom" ? +$("#cDpi").value : undefined,
       };
     }
-    cropMode = false; draft = null;
-    $("#cropPanel").hidden = true; $("#cropBox").hidden = true;
+    closeCrop();
     changed();
     if (applyIt) commit();
   }
+  function closeCrop() { cropMode = false; draft = null; $("#cropPanel").hidden = true; $("#cropBox").hidden = true; }
   function syncCustomUI() {
     const custom = draft && draft.id === "custom";
     $("#cropCustom").hidden = !custom;
@@ -725,10 +728,9 @@
     $("#cropBtn").addEventListener("click", () => (cropMode ? exitCrop(false) : enterCrop()));
     $("#cropCancel").addEventListener("click", () => exitCrop(false));
     $("#cropApply").addEventListener("click", () => exitCrop(true));
-    $("#cropRemove").addEventListener("click", () => { cropMode = false; draft = null; $("#cropPanel").hidden = true; $("#cropBox").hidden = true; P.crop = null; changed(); commit(); });
+    $("#cropRemove").addEventListener("click", () => { closeCrop(); P.crop = null; changed(); commit(); });
     $("#cropFmt").addEventListener("change", () => {
       draft.id = $("#cropFmt").value; draft.swap = false; frameLock = false;
-      if (draft.id === "free") { /* resta la zona attuale */ }
       fitDraftToRatio(); syncCustomUI(); positionCrop(); updateCropInfo();
     });
     ["#cW", "#cH", "#cU", "#cDpi"].forEach((s) => $(s).addEventListener("input", () => {
@@ -825,7 +827,6 @@
   function syncRotUI() {
     const a = rotA(), q = rotQ();
     const f = $("#rotFine"), n = $("#rotNum");
-    if (!f) return;
     if (document.activeElement !== f) f.value = a;
     if (document.activeElement !== n) n.value = a;
     let tot = q * 90 + a; if (tot > 180) tot -= 360;
@@ -834,7 +835,7 @@
   function toggleRot(open) {
     const p = $("#rotPanel");
     p.hidden = open == null ? !p.hidden : !open;
-    if (!p.hidden) { syncRotUI(); try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); } }
+    if (!p.hidden) { syncRotUI(); toTop(); }
     updateTexts();
   }
   function bindRot() {
@@ -850,14 +851,6 @@
     f.addEventListener("dblclick", () => setRot(rotQ(), 0));
     n.addEventListener("input", () => { if (n.value !== "" && isFinite(+n.value)) setRot(rotQ(), +n.value, true); });
     n.addEventListener("change", () => { setRot(rotQ(), +n.value || 0); n.value = rotA(); });
-    n.addEventListener("keydown", (e) => {
-      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-      e.preventDefault();
-      const st = e.shiftKey ? 0.1 : 0.5;
-      setRot(rotQ(), rotA() + (e.key === "ArrowUp" ? st : -st), true);
-      n.value = rotA();
-    });
-    n.addEventListener("keyup", (e) => { if (e.key === "ArrowUp" || e.key === "ArrowDown") commit(); });
     // frecce su e giù: un clic sposta di 0,5° (0,1° con Maiusc), tenendo premuto l'angolo continua a cambiare
     [["#rotUp", 1], ["#rotDown", -1]].forEach(([sel, dir]) => {
       const b = $(sel); let tm = null, iv = null;
@@ -882,7 +875,7 @@
     ["tramonto", "#1b0b3a", "#d6336c", "#ffd27a"], ["aurora", "#061a2b", "#1fa58c", "#e9f7a1"], ["neon", "#12002b", "#ff2fb2", "#39e5ff"], ["vintage", "#2a1a0e", "#9c6b45", "#f3e3c3"],
     ["oceano", "#04102a", "#1b5fa8", "#9fe3ff"], ["pesca", "#3b1f2b", "#e07a5f", "#f6e7cb"], ["lime", "#102010", "#4a8f2c", "#e6ff7a"], ["palco", "#000000", "#4f8dff", "#f3f3f3"],
   ];
-  const hexOk = (v) => { v = String(v || "").trim(); if (v[0] !== "#") v = "#" + v; if (/^#[0-9a-f]{3}$/i.test(v)) v = "#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3]; return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null; };
+  const hexOk = (v) => { v = v.trim().replace(/^#?/, "#"); return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null; };
   const mixHex = (a, b, f) => "#" + IL.hexRGB(a).map((v, i) => Math.round(v + (IL.hexRGB(b)[i] - v) * f).toString(16).padStart(2, "0")).join("");
   const duoMode = () => P.dt || duoLast;
   function setDuo(ch, live) {
@@ -892,7 +885,6 @@
     if (!live) commit();
   }
   function syncDuoUI() {
-    if (!$("#duoPanel")) return;
     const m = duoMode(), on = !!P.dt;
     $("#duoTitle").textContent = m === 3 ? "TriTone" : "DuoTone";
     const ob = $("#duoOn");
@@ -937,7 +929,7 @@
     if (p.hidden) duoPick = null;
     else {
       if (!P.dt) setDuo({ dt: duoLast }); // aprendo il pannello il DuoTone si accende
-      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+      toTop();
     }
     syncDuoUI(); updateTexts();
   }
@@ -949,7 +941,7 @@
     $("#duoM2").addEventListener("click", () => setDuo({ dt: 2 }));
     $("#duoM3").addEventListener("click", () => {
       const ch = { dt: 3 };
-      if (P.dM === IL.defaults().dM) ch.dM = mixHex(P.dS, P.dH, 0.5); // primo TriTone: il colore di mezzo parte tra i due
+      if (P.dM === DEFAULTS.dM) ch.dM = mixHex(P.dS, P.dH, 0.5); // primo TriTone: il colore di mezzo parte tra i due
       setDuo(ch);
     });
     $("#duoSwap").addEventListener("click", () => setDuo({ dS: P.dH, dH: P.dS, dTr: P.dTr === "s" ? "h" : P.dTr === "h" ? "s" : "" }));
@@ -975,7 +967,7 @@
   }
 
   /* ---------- Caricamento immagine ---------- */
-  async function useImage(img) {
+  function useImage(img) {
     let w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
     if (mode === "demo") {
       // foto grandi del telefono: lato lungo al massimo 2560 px su mobile, 4096 px su computer
@@ -988,7 +980,7 @@
     x.imageSmoothingQuality = "high";
     x.drawImage(img, 0, 0, w, h);
     orig = { canvas: c, w, h }; base = null; baseKey = null; workCrop = null;
-    if (cropMode) { cropMode = false; draft = null; $("#cropPanel").hidden = true; $("#cropBox").hidden = true; }
+    closeCrop();
     full = null; workKey = null;
   }
   function loadImg(src) {
@@ -1011,7 +1003,7 @@
     show("loading");
     try {
       const img = await loadImg("data:image/svg+xml;charset=utf-8," + encodeURIComponent(DEMO_SVG));
-      await useImage(img);
+      useImage(img);
     } catch (e) {
       console.error(e);
       show("empty", "empty.title", "empty.text");
@@ -1027,7 +1019,7 @@
     const url = URL.createObjectURL(file);
     try {
       const img = await loadImg(url);
-      await useImage(img);
+      useImage(img);
       freshStart(null, false);
     } catch (e) { toast(t("toast.loadError")); }
     finally { URL.revokeObjectURL(url); }
@@ -1068,12 +1060,6 @@
     selT = setTimeout(() => loadFromSlide(false), 250);
   }
 
-  function readTags(tags) {
-    const o = {};
-    tags.items.forEach((x) => { o[x.key.toUpperCase()] = x.value; });
-    return o;
-  }
-
   async function loadFromSlide(force) {
     const seq = ++loadSeq;
     try {
@@ -1095,15 +1081,15 @@
         const slide = sh.getParentSlide();
         slide.load("id");
         sh.tags.load("items/key,items/value");
-        sh.load("id,name,width");
         await ctx.sync();
-        const tags = readTags(sh.tags);
+        const tags = {};
+        sh.tags.items.forEach((x) => { tags[x.key.toUpperCase()] = x.value; });
         return { id: sh.id, slideId: slide.id, tags };
       });
       if (seq !== loadSeq) return;
       if (info.none || info.multi || info.notImage) {
         shape = null; lastKey = ""; orig = base = full = prev = null;
-        if (cropMode) { cropMode = false; draft = null; $("#cropPanel").hidden = true; }
+        closeCrop();
         setStatus("status.none", "off");
         show("empty", "empty.title", info.multi ? "empty.multi" : info.notImage ? "empty.notImage" : "empty.text");
         return;
@@ -1143,7 +1129,7 @@
       });
       if (seq !== loadSeq) return;
       const im = await loadImg("data:image/png;base64," + res.b64);
-      await useImage(im);
+      useImage(im);
       shape = { id: info.id, slideId: info.slideId, origId: res.origId, edited: edited && !!res.origId };
       let saved = null;
       if (shape.edited) { try { saved = JSON.parse(info.tags.ULAB_PARAMS || "null"); } catch (e) { saved = null; } }
@@ -1163,7 +1149,7 @@
   function finalCanvas() {
     ensureWorking();
     const out = new ImageData(full.w, full.h);
-    IL.process(full.data, full.w, full.h, P, out.data, cacheFull);
+    IL.process(full.data, full.w, full.h, P, out.data);
     let c = canvas(full.w, full.h);
     c.getContext("2d").putImageData(out, 0, 0);
     const alpha = IL.histogram(out.data).alpha;
@@ -1178,15 +1164,6 @@
       xf.imageSmoothingQuality = "high"; xf.drawImage(c, 0, 0, ow, oh); c = f;
     }
     return { c, alpha };
-  }
-  function renderFullBlob() {
-    const { c, alpha } = finalCanvas();
-    const type = alpha ? "image/png" : "image/jpeg";
-    return new Promise((res, rej) => c.toBlob((b) => (b ? res({ blob: b, ext: alpha ? "png" : "jpg", type }) : rej(new Error("toBlob"))), type, 0.92));
-  }
-  function renderFull() {
-    const { c, alpha } = finalCanvas();
-    return { url: alpha ? c.toDataURL("image/png") : c.toDataURL("image/jpeg", 0.92), w: c.width, h: c.height };
   }
   async function shareOrSave(file) {
     // Telefono: menu di condivisione del sistema → "Salva immagine" (Foto), WhatsApp, Messaggi, Mail…
@@ -1224,8 +1201,9 @@
       busy = true; updateTexts();
       await wait(30);
       try {
-        const r = await renderFullBlob();
-        const file = new File([r.blob], "image-lab-" + new Date().toISOString().slice(0, 10) + "." + r.ext, { type: r.type });
+        const { c, alpha } = finalCanvas(), type = alpha ? "image/png" : "image/jpeg";
+        const blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("toBlob"))), type, 0.92));
+        const file = new File([blob], "image-lab-" + new Date().toISOString().slice(0, 10) + (alpha ? ".png" : ".jpg"), { type });
         busy = false; updateTexts();
         await shareOrSave(file);
       } catch (e) {
@@ -1236,8 +1214,8 @@
     busy = true; updateTexts(); setStatus("status.loading", "busy");
     await wait(30); // lascia aggiornare il pulsante prima del calcolo
     try {
-      const fin = renderFull();
-      const b64 = fin.url.split(",")[1];
+      const { c: fin, alpha } = finalCanvas();
+      const b64 = (alpha ? fin.toDataURL("image/png") : fin.toDataURL("image/jpeg", 0.92)).split(",")[1];
       const cur = shape;
       const origId = cur.edited ? cur.origId : cur.id;
 
@@ -1258,7 +1236,7 @@
         }
         if (P.crop || rotQ()) {
           const bx = { left, top, width, height };
-          const a = fin.w / fin.h;
+          const a = fin.width / fin.height;
           if (a > bx.width / bx.height) { height = bx.width / a; top = bx.top + (bx.height - height) / 2; }
           else { width = bx.height * a; left = bx.left + (bx.width - width) / 2; }
         }
@@ -1394,7 +1372,7 @@
     const sel = $("#lang");
     sel.innerHTML = I18N.langs.map(([k, n]) => `<option value="${k}">${n}</option>`).join("");
     sel.value = LANG;
-    sel.addEventListener("change", () => { LANG = sel.value; store.set("imagelab.lang", LANG); applyStatic(); if (mode === "unsupported") showUnsupported(); else if (!shape && mode === "office") { setStatus("status.none", "off"); if ($("#loading").hidden) show("empty", "empty.title", "empty.text"); } render(); });
+    sel.addEventListener("change", () => { LANG = sel.value; saveLang(LANG); applyStatic(); if (mode === "unsupported") showUnsupported(); else if (!shape && mode === "office") { setStatus("status.none", "off"); if ($("#loading").hidden) show("empty", "empty.title", "empty.text"); } render(); });
     $$(".pill").forEach((b) => b.addEventListener("click", () => { ch = b.dataset.ch; updateTexts(); drawHist(); }));
     bindLevels();
     bindZoom();
@@ -1417,7 +1395,7 @@
     $("#beforeBtn").addEventListener("click", () => { before = !before; updateTexts(); render(); });
     // Azzera: tutto come all'inizio, ritaglio compreso
     $("#resetAll").addEventListener("click", () => {
-      if (cropMode) { cropMode = false; draft = null; $("#cropPanel").hidden = true; $("#cropBox").hidden = true; }
+      closeCrop();
       P = D(); preset = "nat"; syncSliders(); changed(); commit();
       frameLock = false;
     });
@@ -1444,7 +1422,7 @@
       } catch (err) { /* il link si apre normalmente */ }
     }));
     let rz = 0;
-    window.addEventListener("resize", () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { drawHist(); placeLevelLabels(); drawView(); }); });
+    window.addEventListener("resize", () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { frameLock = false; drawHist(); placeLevelLabels(); drawView(); }); });
   }
 
   function showUnsupported() {
@@ -1452,16 +1430,11 @@
     show("empty", "unsupported.title", "unsupported.text");
   }
 
-  let started = false;
   function start() {
-    if (started) return; started = true;
     LANG = detectLang();
     bindUI();
     applyStatic();
     if (!inOffice) { document.body.classList.add("web"); startDemo(); return; }
-    startOffice();
-  }
-  function startOffice() {
     let ok = false;
     try { ok = Office.context.requirements.isSetSupported("PowerPointApi", "1.10"); } catch (e) { ok = false; }
     if (!ok) { mode = "unsupported"; showUnsupported(); return; }
@@ -1472,22 +1445,9 @@
     loadFromSlide(true);
   }
 
-  if (window.IL_DEMO || !window.Office || !Office.onReady) {
-    document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", start) : start();
-  } else {
-    Office.onReady((info) => {
-      inOffice = !!(info && info.host === Office.HostType.PowerPoint);
-      if (!started) { start(); return; }
-      // PowerPoint ha risposto dopo il tempo di attesa (computer lento): lascia la prova e collega la presentazione
-      if (inOffice && mode === "demo") {
-        document.body.classList.remove("web");
-        $("#loadRow").hidden = true;
-        $("#preview").classList.remove("droppable");
-        P = D(); baseline = D(); preset = "nat"; orig = base = full = prev = null;
-        LANG = detectLang(); $("#lang").value = LANG; applyStatic();
-        startOffice();
-      }
-    });
-    setTimeout(start, 2500); // se Office.js non risponde (pagina aperta nel browser) parte la prova
-  }
+  // Office.js risponde sempre: dentro PowerPoint con host PowerPoint, aperto nel browser con host vuoto.
+  // Senza Office.js (versione di prova o rete assente) si parte subito nel browser
+  if (window.Office && Office.onReady) Office.onReady((info) => { inOffice = !!(info && info.host === Office.HostType.PowerPoint); start(); });
+  else if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
 })();
